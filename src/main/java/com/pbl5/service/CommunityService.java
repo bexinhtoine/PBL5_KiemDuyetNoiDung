@@ -4,16 +4,22 @@ import com.pbl5.enums.CommunityMemberStatus;
 import com.pbl5.enums.CommunityRole;
 import com.pbl5.model.Community;
 import com.pbl5.model.CommunityMember;
+import com.pbl5.model.Post;
 import com.pbl5.model.Notification;
 import com.pbl5.model.User;
+import com.pbl5.model.CommunityRule;
+import com.pbl5.model.CommunityActivityLog;
 import com.pbl5.repository.CommunityMemberRepository;
 import com.pbl5.repository.CommunityRepository;
 import com.pbl5.repository.NotificationRepository;
+import com.pbl5.repository.CommunityRuleRepository;
+import com.pbl5.repository.CommunityActivityLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,13 +41,33 @@ public class CommunityService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    private void sendNotification(User recipient, User sender, String type, String message, String link) {
+    @Autowired
+    private com.pbl5.repository.PostRepository postRepository;
+
+    @Autowired
+    private CommunityRuleRepository communityRuleRepository;
+
+    @Autowired
+    private CommunityActivityLogRepository communityActivityLogRepository;
+
+    @Transactional
+    public void logActivity(Community community, User admin, String action) {
+        CommunityActivityLog log = new CommunityActivityLog();
+        log.setCommunity(community);
+        log.setUser(admin);
+        log.setAction(action);
+        communityActivityLogRepository.save(log);
+    }
+
+    public void sendNotification(User recipient, User sender, String type, String message, String link) {
         if (recipient == null || (sender != null && recipient.getId().equals(sender.getId()))) {
             return;
         }
         Notification notifEntity = new Notification();
         notifEntity.setUser(recipient);
-        notifEntity.setSender(sender);
+        if (sender != null) {
+            notifEntity.setSender(sender);
+        }
         notifEntity.setType(type);
         notifEntity.setMessage(message);
         notifEntity.setLink(link);
@@ -58,6 +84,10 @@ public class CommunityService {
             notification.put("senderId", sender.getId());
             notification.put("senderName", sender.getFullName());
             notification.put("senderAvatar", sender.getAvatar());
+        } else {
+            notification.put("senderId", null);
+            notification.put("senderName", "Hệ thống");
+            notification.put("senderAvatar", null);
         }
 
         messagingTemplate.convertAndSend("/topic/notifications/" + recipient.getId(), notification);
@@ -66,7 +96,7 @@ public class CommunityService {
     @Transactional
     public Community createCommunity(User creator, String name, String description, 
                                      String avatarUrl, String coverUrl, 
-                                     Boolean isPrivate, Boolean requireApproval) {
+                                     Boolean isPrivate, Boolean requireApproval, Boolean requirePostApproval) {
         if (communityRepository.existsByName(name)) {
             throw new IllegalArgumentException("Tên cộng đồng đã tồn tại.");
         }
@@ -78,6 +108,7 @@ public class CommunityService {
         community.setCoverUrl(coverUrl);
         community.setIsPrivate(isPrivate != null ? isPrivate : false);
         community.setRequireApproval(requireApproval != null ? requireApproval : false);
+        community.setRequirePostApproval(requirePostApproval != null ? requirePostApproval : false);
         community.setCreator(creator);
 
         Community savedCommunity = communityRepository.save(community);
@@ -105,8 +136,17 @@ public class CommunityService {
                 throw new IllegalStateException("Bạn đã là thành viên của cộng đồng này.");
             } else if (existingMember.getStatus() == CommunityMemberStatus.PENDING) {
                 throw new IllegalStateException("Yêu cầu tham gia của bạn đang chờ phê duyệt.");
-            } else {
-                throw new IllegalStateException("Bạn đã bị chặn khỏi cộng đồng này.");
+            } else { // BLOCKED
+                if (existingMember.getBanUntil() != null && existingMember.getBanUntil().isBefore(LocalDateTime.now())) {
+                    communityMemberRepository.delete(existingMember);
+                    communityMemberRepository.flush();
+                } else {
+                    String timeStr = "";
+                    if (existingMember.getBanUntil() != null) {
+                        timeStr = " đến " + existingMember.getBanUntil().toString();
+                    }
+                    throw new IllegalStateException("Bạn đã bị chặn khỏi cộng đồng này" + timeStr + ".");
+                }
             }
         }
 
@@ -181,6 +221,8 @@ public class CommunityService {
         targetMember.setStatus(CommunityMemberStatus.ACTIVE);
         communityMemberRepository.save(targetMember);
 
+        logActivity(targetMember.getCommunity(), adminUser, "Đã phê duyệt thành viên " + targetMember.getUser().getFullName());
+
         // Notification
         sendNotification(
             targetMember.getUser(),
@@ -215,6 +257,8 @@ public class CommunityService {
         Community community = targetMember.getCommunity();
         User targetUser = targetMember.getUser();
 
+        logActivity(community, adminUser, "Đã trục xuất thành viên " + targetUser.getFullName());
+
         communityMemberRepository.delete(targetMember);
 
         // Notification
@@ -248,5 +292,60 @@ public class CommunityService {
 
     public Optional<Community> getCommunityById(Long communityId) {
         return communityRepository.findById(communityId);
+    }
+
+    public boolean existsByName(String name) {
+        return communityRepository.existsByName(name);
+    }
+
+    @Transactional
+    public Community saveCommunity(Community community) {
+        return communityRepository.save(community);
+    }
+
+    @Transactional
+    public void deleteCommunityAndNotifyMembers(Community community, User executor) {
+        deleteCommunityAndNotifyMembers(community, executor, false);
+    }
+
+    @Transactional
+    public void deleteCommunityAndNotifyMembers(Community community, User executor, boolean keepPosts) {
+        Long id = community.getId();
+        String communityName = community.getName();
+
+        // 1. Lấy danh sách toàn bộ thành viên
+        List<CommunityMember> members = communityMemberRepository.findByCommunityId(id);
+
+        // 2. Gỡ liên kết bài viết và xử lý theo tùy chọn
+        List<Post> posts = postRepository.findByCommunityIdOrderByCreatedAtDesc(id);
+        for (Post p : posts) {
+            p.setCommunity(null);
+            if (!keepPosts) {
+                p.setStatus(com.pbl5.enums.PostStatus.DELETED);
+            }
+            postRepository.save(p);
+        }
+
+        // 2.5. Xóa quy tắc nhóm và nhật ký hoạt động
+        communityRuleRepository.deleteByCommunityId(id);
+        communityActivityLogRepository.deleteByCommunityId(id);
+
+        // 3. Xóa các thành viên khỏi cộng đồng
+        communityMemberRepository.deleteByCommunityId(id);
+
+        // 4. Xóa cộng đồng
+        communityRepository.delete(community);
+
+        // 5. Gửi thông báo đến tất cả thành viên ACTIVE (trừ người thực hiện)
+        for (CommunityMember member : members) {
+            if (member.getStatus() == CommunityMemberStatus.ACTIVE) {
+                User memberUser = member.getUser();
+                if (memberUser != null && !memberUser.getId().equals(executor.getId())) {
+                    sendNotification(memberUser, executor, "COMMUNITY_DELETED",
+                            "Cộng đồng \"" + communityName + "\" đã bị giải tán bởi " + executor.getFullName() + ".",
+                            "/html/communities.html");
+                }
+            }
+        }
     }
 }

@@ -7,16 +7,18 @@ public class CreateCommunityRequest {
     private String coverUrl;
     private Boolean isPrivate;
     private Boolean requireApproval;
+    private Boolean requirePostApproval;
 
     public CreateCommunityRequest() {}
 
-    public CreateCommunityRequest(String name, String description, String avatarUrl, String coverUrl, Boolean isPrivate, Boolean requireApproval) {
+    public CreateCommunityRequest(String name, String description, String avatarUrl, String coverUrl, Boolean isPrivate, Boolean requireApproval, Boolean requirePostApproval) {
         this.name = name;
         this.description = description;
         this.avatarUrl = avatarUrl;
         this.coverUrl = coverUrl;
         this.isPrivate = isPrivate;
         this.requireApproval = requireApproval;
+        this.requirePostApproval = requirePostApproval;
     }
 
     public String getName() {
@@ -65,5 +67,13 @@ public class CreateCommunityRequest {
 
     public void setRequireApproval(Boolean requireApproval) {
         this.requireApproval = requireApproval;
+    }
+
+    public Boolean getRequirePostApproval() {
+        return requirePostApproval;
+    }
+
+    public void setRequirePostApproval(Boolean requirePostApproval) {
+        this.requirePostApproval = requirePostApproval;
     }
 }

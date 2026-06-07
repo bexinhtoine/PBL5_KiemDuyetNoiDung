@@ -18,6 +18,7 @@ public class PostResponse {
     private String visibility;
     private boolean bookmarkedByCurrentUser;
     private String status;
+    private boolean pinned;
 
     public PostResponse(Long id, String content, String imageUrl, String videoUrl, LocalDateTime createdAt,
             Long authorId, String authorName, String authorAvatar, long likeCount, long commentCount,
@@ -222,5 +223,13 @@ public class PostResponse {
 
     public void setCommunityName(String communityName) {
         this.communityName = communityName;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
     }
 }

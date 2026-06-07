@@ -28,6 +28,9 @@ public class Post extends BaseContent {
     @Column(nullable = false, columnDefinition = "varchar(255) default 'ACTIVE'")
     private PostStatus status = PostStatus.ACTIVE;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean pinned = false;
+
     // Điểm cao nhất từ 3 mô hình (0.0 - 1.0)
     private Double bestScore = 0.0;
 
@@ -313,5 +316,13 @@ public class Post extends BaseContent {
 
     public void setCommunity(Community community) {
         this.community = community;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
     }
 }

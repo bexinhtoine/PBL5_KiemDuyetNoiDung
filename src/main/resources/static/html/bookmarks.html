@@ -37,6 +37,9 @@
                 <a href="/html/friends.html" class="nav-link" title="Bạn bè">
                     <i class="fa-solid fa-user-group"></i>
                 </a>
+                <a href="/html/communities.html" class="nav-link" title="Cộng đồng">
+                    <i class="fa-solid fa-users-rectangle"></i>
+                </a>
                 <a href="/html/bookmarks.html" class="nav-link active" title="Đã lưu">
                     <i class="fa-solid fa-bookmark"></i>
                 </a>
@@ -447,6 +450,11 @@
                     likeIcon.classList.add('fa-solid', 'text-red');
                     likeBtn.style.color = 'var(--red-icon)';
                     likeCountSpan.innerText = `Mọi người (${currentCount + 1})`;
+                    
+                    // Hiệu ứng tim bay GSAP
+                    if (window.animateHeartBurst) {
+                        window.animateHeartBurst(likeIcon);
+                    }
                 }
             }
             try {

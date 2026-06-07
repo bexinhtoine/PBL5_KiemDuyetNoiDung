@@ -34,6 +34,9 @@ public class CommunityMember {
     @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt;
 
+    @Column(name = "ban_until", nullable = true)
+    private LocalDateTime banUntil;
+
     @PrePersist
     protected void onCreate() {
         this.joinedAt = LocalDateTime.now();
@@ -86,5 +89,13 @@ public class CommunityMember {
 
     public void setJoinedAt(LocalDateTime joinedAt) {
         this.joinedAt = joinedAt;
+    }
+
+    public LocalDateTime getBanUntil() {
+        return banUntil;
+    }
+
+    public void setBanUntil(LocalDateTime banUntil) {
+        this.banUntil = banUntil;
     }
 }

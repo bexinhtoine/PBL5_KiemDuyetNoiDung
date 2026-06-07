@@ -1585,4 +1585,100 @@ html[data-theme="dark"] .search-results-dropdown::-webkit-scrollbar-thumb:hover 
     background: #4d4e50;
 }
 
+/* Premium Buttons & Floating Heart styles for Community */
+.community-btn {
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid transparent;
+    outline: none;
+    text-decoration: none;
+}
+
+.community-btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+.community-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    filter: brightness(1.1);
+}
+.community-btn-primary:active {
+    transform: translateY(0);
+}
+
+.community-btn-secondary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+.community-btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+    filter: brightness(1.1);
+}
+.community-btn-secondary:active {
+    transform: translateY(0);
+}
+
+.community-btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+.community-btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+    filter: brightness(1.1);
+}
+.community-btn-warning:active {
+    transform: translateY(0);
+}
+
+.community-btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+.community-btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+    filter: brightness(1.1);
+}
+.community-btn-danger:active {
+    transform: translateY(0);
+}
+
+.community-btn-outline {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+.community-btn-outline:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: var(--text-main) !important;
+    transform: translateY(-2px);
+}
+.community-btn-outline:active {
+    transform: translateY(0);
+}
+
+/* Floating Heart Elements for Like Animation */
+.floating-heart {
+    position: absolute;
+    color: #f3425f;
+    pointer-events: none;
+    z-index: 9999;
+    text-shadow: 0 2px 8px rgba(243, 66, 95, 0.3);
+}
+
 

@@ -54,14 +54,16 @@ async function loadCommunityDetails(token, id) {
 
             const isMember = community.membershipStatus === 'ACTIVE';
             const isPending = community.membershipStatus === 'PENDING';
-            const isCreator = community.creatorId === window.currentUser.id;
+            const isCreator = community.creatorId === window.currentUser.id || community.membershipRole === 'OWNER';
+            const isAdmin = community.membershipRole === 'ADMIN';
 
             renderCommunityHeader(community, isMember, isCreator, isPending);
             
-            if (!community.isPrivate || isMember || isCreator || window.currentUser.role === 'ADMIN' || window.currentUser.role === 'MODERATOR') {
+            if (!community.isPrivate || isMember || isCreator || isAdmin || window.currentUser.role === 'ADMIN' || window.currentUser.role === 'MODERATOR') {
                 document.getElementById('community-create-post-box').style.display = 'block';
                 // Attach communityId to post creation logic
                 window.postCommunityId = community.id;
+                loadPinnedPosts(token, id);
                 loadCommunityPosts(token, id);
             } else {
                 document.getElementById('skeleton-posts').style.display = 'none';
@@ -72,7 +74,7 @@ async function loadCommunityDetails(token, id) {
 
             // Auto-open management section if tab=manage in URL
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('tab') === 'manage' && isCreator) {
+            if (urlParams.get('tab') === 'manage' && (isCreator || isAdmin)) {
                 showManageSection();
             }
         } else {
@@ -127,29 +129,41 @@ function renderCommunityHeader(community, isMember, isCreator, isPending) {
     }
 
     const btn = document.getElementById('btn-community-action');
-    btn.style.display = 'block';
+    const actionContainer = document.getElementById('community-actions-container') || (btn ? btn.parentElement : null);
     
-    // Reset any styles
-    btn.style.cursor = 'pointer';
-    btn.style.background = '';
-    btn.style.color = '';
+    const isOwner = community.creatorId === window.currentUser.id || community.membershipRole === 'OWNER';
+    const isAdmin = community.membershipRole === 'ADMIN';
+    window.isCurrentCommunityManager = isOwner || isAdmin;
+    window.isCurrentCommunityOwner = isOwner;
 
-    if (isCreator) {
-        btn.innerHTML = '<i class="fa-solid fa-gear"></i> Quản lý';
-        btn.className = 'btn btn-secondary';
-        btn.onclick = () => showManageSection();
-    } else if (isMember) {
-        btn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Rời nhóm';
-        btn.className = 'btn btn-secondary';
-        btn.onclick = () => leaveCommunity(community.id);
-    } else if (isPending) {
-        btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Hủy yêu cầu';
-        btn.className = 'btn btn-secondary';
-        btn.onclick = () => leaveCommunity(community.id, true);
-    } else {
-        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Tham gia';
-        btn.className = 'btn btn-primary';
-        btn.onclick = () => joinCommunity(community.id);
+    if (actionContainer) {
+        if (isOwner) {
+            actionContainer.innerHTML = `
+                <button class="community-btn community-btn-secondary" onclick="showManageSection()"><i class="fa-solid fa-gear"></i> Quản lý</button>
+                <button class="community-btn community-btn-warning" onclick="openEditCommunityModal()"><i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa</button>
+                <button class="community-btn community-btn-danger" onclick="disbandCommunity()"><i class="fa-solid fa-trash-can"></i> Giải tán</button>
+            `;
+        } else if (isAdmin) {
+            actionContainer.innerHTML = `
+                <button class="community-btn community-btn-secondary" onclick="showManageSection()"><i class="fa-solid fa-gear"></i> Quản lý</button>
+            `;
+        } else {
+            actionContainer.innerHTML = `<button id="btn-community-action" class="community-btn"></button>`;
+            const newBtn = document.getElementById('btn-community-action');
+            if (isMember) {
+                newBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Rời nhóm';
+                newBtn.className = 'community-btn community-btn-outline';
+                newBtn.onclick = () => leaveCommunity(community.id);
+            } else if (isPending) {
+                newBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Hủy yêu cầu';
+                newBtn.className = 'community-btn community-btn-outline';
+                newBtn.onclick = () => leaveCommunity(community.id, true);
+            } else {
+                newBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Tham gia';
+                newBtn.className = 'community-btn community-btn-primary';
+                newBtn.onclick = () => joinCommunity(community.id);
+            }
+        }
     }
 
     const adminInfoEl = document.getElementById('community-admin-info');
@@ -158,7 +172,7 @@ function renderCommunityHeader(community, isMember, isCreator, isPending) {
         adminInfoEl.innerHTML = `
             <a href="/html/profile.html?userId=${community.creatorId}" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;">
                 <img src="${creatorAvatar}" alt="Admin Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                <span style="font-weight: 600;">${community.creatorName}</span>
+                <span style="font-weight: 600;">${escapeHtml(community.creatorName)}</span>
             </a>
         `;
     }
@@ -172,6 +186,7 @@ window.showManageSection = function() {
         section.style.display = 'block';
         if (postsContainer) postsContainer.style.display = 'none';
         if (createPostBox) createPostBox.style.display = 'none';
+        updateAllManageCounts();
         switchManageTab('pending');
         // Smooth scroll to section
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -194,7 +209,7 @@ window.hideManageSection = function() {
 };
 
 window.switchManageTab = function(tab) {
-    const tabs = ['pending', 'active', 'reports'];
+    const tabs = ['pending', 'active', 'reports', 'blocked', 'posts', 'rules', 'logs'];
     tabs.forEach(t => {
         const tabBtn = document.getElementById(`manage-tab-${t}`);
         const section = document.getElementById(`manage-list-${t}`);
@@ -217,6 +232,14 @@ window.switchManageTab = function(tab) {
         fetchManageMembers(tab);
     } else if (tab === 'reports') {
         fetchCommunityReports();
+    } else if (tab === 'blocked') {
+        fetchManageMembers('blocked');
+    } else if (tab === 'posts') {
+        fetchPendingPosts();
+    } else if (tab === 'rules') {
+        fetchCommunityRulesManage();
+    } else if (tab === 'logs') {
+        fetchCommunityLogs();
     }
 };
 
@@ -248,6 +271,17 @@ async function fetchCommunityReports() {
                 const avatar = r.reporterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.reporterName || 'User')}&background=5e6ad2&color=fff`;
                 const statusColor = r.status === 'PENDING' ? '#faad14' : (r.status === 'RESOLVED' ? '#10b981' : '#ff4d4f');
                 const statusText = r.status === 'PENDING' ? 'Đang chờ' : (r.status === 'RESOLVED' ? 'Đã xử lý' : r.status);
+                
+                let reportActions = '';
+                if (r.status === 'PENDING') {
+                    reportActions = `
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;" onclick="resolveGroupReport(${r.id}, 'RESOLVED', 'DELETE')">Gỡ bài</button>
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; font-weight: 600;" onclick="resolveGroupReport(${r.id}, 'DISMISSED')">Bỏ qua</button>
+                        </div>
+                    `;
+                }
+
                 return `
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border-color);">
                         <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1;">
@@ -264,6 +298,7 @@ async function fetchCommunityReports() {
                                 <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
                                     ${r.createdAt ? new Date(r.createdAt).toLocaleString('vi-VN') : ''}
                                 </div>
+                                ${reportActions}
                             </div>
                         </div>
                         <span style="font-size: 12px; padding: 3px 10px; border-radius: 12px; font-weight: 600; background: ${statusColor}22; color: ${statusColor};">${statusText}</span>
@@ -295,7 +330,7 @@ async function fetchManageMembers(status) {
     container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
 
     try {
-        const res = await fetch(`/api/communities/${window.currentCommunityId}/members?status=${status}`, {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/members?status=${status.toUpperCase()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -306,36 +341,60 @@ async function fetchManageMembers(status) {
             if (countEl) countEl.textContent = list.length;
 
             if (list.length === 0) {
-                container.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Không có ${status === 'pending' ? 'yêu cầu nào' : 'thành viên nào'}.</div>`;
+                container.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Không có ${status === 'pending' ? 'yêu cầu nào' : (status === 'blocked' ? 'người dùng bị chặn nào' : 'thành viên nào')}.</div>`;
                 return;
             }
 
             container.innerHTML = list.map(m => {
                 const avatar = m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.fullName)}&background=5e6ad2&color=fff`;
                 let actionBtn = '';
+                
                 if (status === 'pending') {
                     actionBtn = `
                         <button class="btn btn-primary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer;" onclick="doApproveMember(${m.userId})">Phê duyệt</button>
                         <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer;" onclick="doKickMember(${m.userId}, 'từ chối')">Từ chối</button>
                     `;
+                } else if (status === 'blocked') {
+                    actionBtn = `
+                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer;" onclick="doUnbanMember(${m.userId})">Mở chặn</button>
+                    `;
                 } else {
+                    // status === 'active'
                     if (m.role !== 'OWNER' && window.currentUser.id !== m.userId) {
-                        actionBtn = `<button class="btn btn-danger" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--red-icon); color: white; border: none; cursor: pointer;" onclick="doKickMember(${m.userId})">Trục xuất</button>`;
+                        const isOwnerOfGroup = window.currentCommunity.creatorId === window.currentUser.id;
+                        let promoteBtn = '';
+                        let banBtn = '';
+                        if (isOwnerOfGroup) {
+                            if (m.role === 'ADMIN') {
+                                promoteBtn = `<button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer;" onclick="changeMemberRole(${m.userId}, 'MEMBER')">Bãi nhiệm</button>`;
+                            } else {
+                                promoteBtn = `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; cursor: pointer;" onclick="changeMemberRole(${m.userId}, 'ADMIN')">Bổ nhiệm Admin</button>`;
+                            }
+                            banBtn = `<button class="btn btn-danger" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; background: #fa541c; color: white; border: none; cursor: pointer; font-weight: 600;" onclick="doBanMember(${m.userId})">Chặn</button>`;
+                        }
+                        
+                        actionBtn = `
+                            ${promoteBtn}
+                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; background: var(--red-icon); color: white; border: none; cursor: pointer;" onclick="doKickMember(${m.userId})">Trục xuất</button>
+                            ${banBtn}
+                        `;
                     } else if (m.role === 'OWNER') {
                         actionBtn = `<span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Chủ sở hữu</span>`;
                     }
                 }
+
+                const roleLabel = m.role === 'ADMIN' ? '<span style="font-size: 11px; padding: 2px 6px; background: rgba(94, 106, 210, 0.15); color: var(--primary-color); border-radius: 4px; font-weight: 600; margin-left: 5px;">Phó nhóm</span>' : '';
 
                 return `
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color);">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <img src="${avatar}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                             <div>
-                                <div style="font-weight: 600; color: var(--text-main);">${m.fullName}</div>
+                                <div style="font-weight: 600; color: var(--text-main); display: flex; align-items: center;">${m.fullName} ${roleLabel}</div>
                                 <div style="font-size: 12px; color: var(--text-muted);">Tham gia ${new Date(m.joinedAt).toLocaleDateString('vi-VN')}</div>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                             ${actionBtn}
                         </div>
                     </div>
@@ -396,6 +455,63 @@ window.doKickMember = function(userId, actionName = 'trục xuất') {
 };
 
 async function joinCommunity(id) {
+    const token = localStorage.getItem('token');
+    if (window.currentCommunity && window.currentCommunity.isPrivate) {
+        try {
+            const rulesRes = await fetch(`/api/communities/${id}/rules`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (rulesRes.ok) {
+                const rules = await rulesRes.json();
+                if (rules && rules.length > 0) {
+                    const listContainer = document.getElementById('join-rules-list');
+                    listContainer.innerHTML = rules.map((r, index) => `
+                        <div style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-main);">
+                            <div style="font-weight: 700; font-size: 14px; margin-bottom: 5px; color: var(--text-main);">${index + 1}. ${escapeHtml(r.title)}</div>
+                            <div style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">${escapeHtml(r.description)}</div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('agree-rules-check').checked = false;
+                    toggleJoinRulesButton(false);
+                    document.getElementById('join-rules-modal').style.display = 'flex';
+                    window.pendingJoinCommunityId = id;
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error("Lỗi khi tải quy tắc kiểm tra", e);
+        }
+    }
+    performJoinCommunity(id);
+}
+
+window.toggleJoinRulesButton = function(checked) {
+    const btn = document.getElementById('btn-submit-join-rules');
+    if (btn) {
+        btn.disabled = !checked;
+        if (checked) {
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        } else {
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+        }
+    }
+};
+
+window.closeJoinRulesModal = function() {
+    document.getElementById('join-rules-modal').style.display = 'none';
+};
+
+window.submitJoinWithRules = function() {
+    closeJoinRulesModal();
+    if (window.pendingJoinCommunityId) {
+        performJoinCommunity(window.pendingJoinCommunityId);
+    }
+};
+
+async function performJoinCommunity(id) {
     const token = localStorage.getItem('token');
     try {
         const res = await fetch(`/api/communities/${id}/join`, {
@@ -490,19 +606,59 @@ function renderPosts(posts, token) {
     
     let allPostsHtml = '';
     posts.forEach(post => {
-        const isMine = post.mine ?? post.isMine ?? false;
+        const isMine = post.authorId === window.currentUser.id;
+        const isManager = window.isCurrentCommunityManager;
         
+        let optionsHtml = '';
+        if (isMine || isManager) {
+            optionsHtml = `
+            <div class="post-options" style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+                <button class="options-btn" onclick="toggleDropdown(${post.id})" style="background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; padding: 5px;">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+                <div id="dropdown-${post.id}" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 30px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 200px; z-index: 100;">
+                    ${isMine ? `
+                        <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
+                    ` : `
+                        <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Gỡ bài viết (BQT)</a>
+                    `}
+                    ${isManager ? `
+                        <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                        ${post.pinned ? `
+                            <a href="javascript:void(0)" onclick="unpinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack" style="transform: rotate(45deg); color: var(--primary-color);"></i> Bỏ ghim bài viết</a>
+                        ` : `
+                            <a href="javascript:void(0)" onclick="pinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack"></i> Ghim bài viết</a>
+                        `}
+                    ` : ''}
+                </div>
+            </div>
+            `;
+        } else {
+            optionsHtml = `
+            <div class="post-options" style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+                <button class="options-btn" onclick="toggleDropdown(${post.id})" style="background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; padding: 5px;">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+                <div id="dropdown-${post.id}" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 30px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 200px; z-index: 100;">
+                    <a href="javascript:void(0)" onclick="reportPostInGroup(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-regular fa-flag"></i> Báo cáo bài viết</a>
+                </div>
+            </div>
+            `;
+        }
+
         let postHtml = `
-        <article class="card post" id="post-${post.id}">
+        <article class="card post" id="post-${post.id}" style="position: relative;">
             <div class="post-header">
                 <a href="/html/profile.html?userId=${post.authorId}">
                     <img src="${post.authorAvatar || '/uploads/default-avatar.png'}" alt="Avatar" class="avatar-medium">
                 </a>
                 <div class="post-meta">
-                    <h4 class="post-author"><a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${post.authorName}</a></h4>
+                    <h4 class="post-author"><a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${escapeHtml(post.authorName)}</a></h4>
                     <span class="post-time">${timeSince(post.createdAt)}</span>
                 </div>
             </div>
+            
+            ${optionsHtml}
             
             <div class="post-content">
                 <p>${escapeHtml(post.content || '')}</p>
@@ -522,7 +678,7 @@ function renderPosts(posts, token) {
         postHtml += `
             <div class="post-actions-bar">
                 <button id="like-btn-${post.id}" class="interaction-btn" onclick="toggleLike(${post.id})" style="${likeStyle}">
-                    <i id="like-icon-${post.id}" class="${likeIcon} fa-heart"></i> Mọi người (${post.likeCount})
+                    <i id="like-icon-${post.id}" class="${likeIcon} fa-heart"></i> <span id="like-count-${post.id}">Mọi người (${post.likeCount})</span>
                 </button>
                 <button class="interaction-btn" onclick="location.href='/html/post.html?id=${post.id}'">
                     <i class="fa-regular fa-comment"></i> Bình luận (${post.commentCount})
@@ -543,13 +699,48 @@ function renderPosts(posts, token) {
 
 async function toggleLike(postId) {
     const token = localStorage.getItem('token');
+    
+    // UI Cập nhật tức thì (Optimistic UI)
+    const likeBtn = document.getElementById(`like-btn-${postId}`);
+    const likeIcon = document.getElementById(`like-icon-${postId}`);
+    const likeCountSpan = document.getElementById(`like-count-${postId}`);
+
+    if (likeBtn && likeIcon && likeCountSpan) {
+        const isLiked = likeIcon.classList.contains('fa-solid');
+
+        let currentCount = 0;
+        const countMatch = likeCountSpan.innerText.match(/\d+/);
+        if (countMatch) {
+            currentCount = parseInt(countMatch[0], 10);
+        }
+
+        if (isLiked) {
+            // Đổi thành chưa like
+            likeIcon.classList.remove('fa-solid', 'text-red');
+            likeIcon.classList.add('fa-regular');
+            likeBtn.style.color = '';
+            likeCountSpan.innerText = `Mọi người (${Math.max(0, currentCount - 1)})`;
+        } else {
+            // Đổi thành đã like
+            likeIcon.classList.remove('fa-regular');
+            likeIcon.classList.add('fa-solid', 'text-red');
+            likeBtn.style.color = 'var(--red-icon)';
+            likeCountSpan.innerText = `Mọi người (${currentCount + 1})`;
+            
+            // Hiệu ứng tim bay GSAP
+            if (window.animateHeartBurst) {
+                window.animateHeartBurst(likeIcon);
+            }
+        }
+    }
+
     try {
         const res = await fetch(`/api/posts/${postId}/like`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.ok) {
-            loadCommunityPosts(token, window.currentCommunityId);
+        if (!res.ok) {
+            console.error("Lỗi khi cập nhật like trên server");
         }
     } catch (err) {
         console.error(err);
@@ -646,3 +837,859 @@ window.logout = function () {
         }
     );
 };
+
+window.disbandCommunity = function() {
+    // Set default value for radio
+    const radios = document.getElementsByName('disband-keep-posts');
+    if (radios.length > 0) radios[0].checked = true;
+    document.getElementById('disband-community-modal').style.display = 'flex';
+};
+
+window.closeDisbandCommunityModal = function() {
+    document.getElementById('disband-community-modal').style.display = 'none';
+};
+
+window.submitDisbandCommunity = async function() {
+    const keepPostsRadios = document.getElementsByName('disband-keep-posts');
+    let keepPosts = false;
+    for (let r of keepPostsRadios) {
+        if (r.checked) {
+            keepPosts = r.value === 'true';
+            break;
+        }
+    }
+    
+    closeDisbandCommunityModal();
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}?keepPosts=${keepPosts}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast("Đã giải tán cộng đồng thành công", "success");
+            setTimeout(() => {
+                window.location.href = '/html/communities.html';
+            }, 1500);
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    }
+};
+
+window.resolveGroupReport = async function(reportId, status, action = '') {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/reports/${reportId}/status?status=${status}&action=${action}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast(status === 'RESOLVED' ? "Đã gỡ bài viết vi phạm" : "Đã bỏ qua báo cáo", "success");
+            fetchCommunityReports();
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    }
+};
+
+window.openEditCommunityModal = function() {
+    if (!window.currentCommunity) return;
+    
+    document.getElementById('edit-community-name').value = window.currentCommunity.name || '';
+    document.getElementById('edit-community-desc').value = window.currentCommunity.description || '';
+    document.getElementById('edit-community-privacy').value = window.currentCommunity.isPrivate ? 'PRIVATE' : 'PUBLIC';
+    document.getElementById('edit-community-post-approval').value = window.currentCommunity.requirePostApproval ? 'MANUAL' : 'AUTO';
+    
+    // Preview image init
+    const coverImg = document.getElementById('edit-cover-preview-img');
+    const coverPlaceholder = document.getElementById('edit-cover-placeholder');
+    if (window.currentCommunity.coverUrl) {
+        coverImg.src = window.currentCommunity.coverUrl;
+        coverImg.style.display = 'block';
+        coverPlaceholder.style.display = 'none';
+        document.getElementById('edit-uploaded-cover-url').value = window.currentCommunity.coverUrl;
+    } else {
+        coverImg.style.display = 'none';
+        coverPlaceholder.style.display = 'block';
+        document.getElementById('edit-uploaded-cover-url').value = '';
+    }
+
+    const avatarImg = document.getElementById('edit-avatar-preview-img');
+    const avatarPlaceholder = document.getElementById('edit-avatar-placeholder');
+    if (window.currentCommunity.avatarUrl) {
+        avatarImg.src = window.currentCommunity.avatarUrl;
+        avatarImg.style.display = 'block';
+        avatarPlaceholder.style.display = 'none';
+        document.getElementById('edit-uploaded-avatar-url').value = window.currentCommunity.avatarUrl;
+    } else {
+        avatarImg.style.display = 'none';
+        avatarPlaceholder.style.display = 'block';
+        document.getElementById('edit-uploaded-avatar-url').value = '';
+    }
+
+    document.getElementById('edit-community-modal').style.display = 'flex';
+};
+
+window.closeEditCommunityModal = function() {
+    document.getElementById('edit-community-modal').style.display = 'none';
+};
+
+window.previewEditCommunityCover = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const placeholder = document.getElementById('edit-cover-placeholder');
+    const img = document.getElementById('edit-cover-preview-img');
+    
+    placeholder.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 24px;"></i><div style="font-size: 13px; margin-top: 5px;">Đang tải...</div>';
+    
+    try {
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload/image', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+        
+        document.getElementById('edit-uploaded-cover-url').value = data.url;
+        img.src = data.url;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+    } catch (e) {
+        showToast("Lỗi tải ảnh lên", "error");
+        placeholder.innerHTML = '<i class="fa-solid fa-camera" style="font-size: 24px; margin-bottom: 5px;"></i><div style="font-size: 13px;">Tải ảnh bìa mới</div>';
+    }
+};
+
+window.previewEditCommunityAvatar = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const placeholder = document.getElementById('edit-avatar-placeholder');
+    const img = document.getElementById('edit-avatar-preview-img');
+    
+    placeholder.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 24px;"></i>';
+    
+    try {
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload/image', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+        
+        document.getElementById('edit-uploaded-avatar-url').value = data.url;
+        img.src = data.url;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+    } catch (e) {
+        showToast("Lỗi tải ảnh lên", "error");
+        placeholder.innerHTML = '<i class="fa-solid fa-users" style="font-size: 28px;"></i>';
+    }
+};
+
+window.submitEditCommunity = async function() {
+    const name = document.getElementById('edit-community-name').value.trim();
+    const desc = document.getElementById('edit-community-desc').value.trim();
+    const privacy = document.getElementById('edit-community-privacy').value;
+    const coverUrl = document.getElementById('edit-uploaded-cover-url').value;
+    const avatarUrl = document.getElementById('edit-uploaded-avatar-url').value;
+
+    if (!name) {
+        showToast("Vui lòng nhập tên cộng đồng", "error");
+        return;
+    }
+
+    const btnSubmit = document.getElementById('btn-edit-community-submit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}`, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                description: desc,
+                isPrivate: privacy === 'PRIVATE',
+                requireApproval: privacy === 'PRIVATE',
+                requirePostApproval: document.getElementById('edit-community-post-approval').value === 'MANUAL',
+                avatarUrl: avatarUrl,
+                coverUrl: coverUrl
+            })
+        });
+
+        if (res.ok) {
+            showToast("Cập nhật thông tin thành công!", "success");
+            closeEditCommunityModal();
+            location.reload();
+        } else {
+            const err = await res.text();
+            showToast(err || "Lỗi khi cập nhật cộng đồng", "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+        console.error(e);
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = 'Lưu thay đổi';
+    }
+};
+
+window.changeMemberRole = function(userId, role) {
+    const title = role === 'ADMIN' ? 'Bổ nhiệm Phó nhóm' : 'Bãi nhiệm Phó nhóm';
+    const message = role === 'ADMIN' 
+        ? 'Bạn có chắc chắn muốn bổ nhiệm thành viên này làm Phó nhóm không?' 
+        : 'Bạn có chắc chắn muốn bãi nhiệm vai trò Phó nhóm của thành viên này không?';
+
+    showConfirmModal(title, message, async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/communities/${window.currentCommunityId}/members/${userId}/role?role=${role}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                showToast("Đã cập nhật vai trò thành công", "success");
+                fetchManageMembers('active');
+            } else {
+                showToast(await res.text(), "error");
+            }
+        } catch (e) {
+            showToast("Lỗi kết nối", "error");
+        }
+    });
+};
+
+window.doBanMember = function(userId) {
+    document.getElementById('ban-user-id-input').value = userId;
+    const radios = document.getElementsByName('ban-duration');
+    if (radios.length > 0) radios[0].checked = true;
+    document.getElementById('ban-member-modal').style.display = 'flex';
+};
+
+window.closeBanMemberModal = function() {
+    document.getElementById('ban-member-modal').style.display = 'none';
+};
+
+window.submitBanMember = async function() {
+    const userId = document.getElementById('ban-user-id-input').value;
+    const durationRadios = document.getElementsByName('ban-duration');
+    let duration = 1;
+    for (let r of durationRadios) {
+        if (r.checked) {
+            duration = parseInt(r.value, 10);
+            break;
+        }
+    }
+    
+    closeBanMemberModal();
+    
+    const token = localStorage.getItem('token');
+    try {
+        let url = `/api/communities/${window.currentCommunityId}/ban/${userId}`;
+        if (duration > 0) {
+            url += `?duration=${duration}`;
+        }
+        
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast("Đã chặn thành viên thành công", "success");
+            fetchManageMembers('active');
+            updateAllManageCounts();
+            fetchMemberCount(token, window.currentCommunityId);
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    }
+};
+
+window.doUnbanMember = function(userId) {
+    showConfirmModal(
+        'Mở chặn thành viên',
+        'Bạn có chắc chắn muốn mở chặn cho người dùng này không?',
+        async () => {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/communities/${window.currentCommunityId}/unban/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    showToast("Đã bỏ chặn thành công", "success");
+                    fetchManageMembers('blocked');
+                } else {
+                    showToast(await res.text(), "error");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối", "error");
+            }
+        }
+    );
+};
+
+async function updateAllManageCounts() {
+    const token = localStorage.getItem('token');
+    const communityId = window.currentCommunityId;
+    if (!communityId) return;
+
+    // Fetch pending members count
+    try {
+        const res = await fetch(`/api/communities/${communityId}/members?status=PENDING`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const list = await res.json();
+            const el = document.getElementById('count-pending');
+            if (el) el.textContent = list.length;
+        }
+    } catch(e) {}
+
+    // Fetch active members count
+    try {
+        const res = await fetch(`/api/communities/${communityId}/members?status=ACTIVE`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const list = await res.json();
+            const el = document.getElementById('count-active');
+            if (el) el.textContent = list.length;
+        }
+    } catch(e) {}
+
+    // Fetch reports count
+    try {
+        const res = await fetch(`/api/communities/${communityId}/reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const list = await res.json();
+            const el = document.getElementById('count-reports');
+            if (el) el.textContent = list.length;
+        }
+    } catch(e) {}
+
+    // Fetch blocked members count
+    try {
+        const res = await fetch(`/api/communities/${communityId}/members?status=BLOCKED`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const list = await res.json();
+            const el = document.getElementById('count-blocked');
+            if (el) el.textContent = list.length;
+        }
+    } catch(e) {}
+
+    // Fetch pending posts count
+    try {
+        const res = await fetch(`/api/communities/${communityId}/pending-posts`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const list = await res.json();
+            const el = document.getElementById('count-pending-posts');
+            if (el) el.textContent = list.length;
+        }
+    } catch(e) {}
+
+    // Fetch rules count
+    try {
+        const res = await fetch(`/api/communities/${communityId}/rules`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const list = await res.json();
+            const el = document.getElementById('count-rules');
+            if (el) el.textContent = list.length;
+        }
+    } catch(e) {}
+}
+
+async function fetchPendingPosts() {
+    const container = document.getElementById('manage-list-posts');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/pending-posts`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const posts = await res.json();
+            const countEl = document.getElementById('count-pending-posts');
+            if (countEl) countEl.textContent = posts.length;
+            
+            if (posts.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="fa-solid fa-check-circle" style="font-size: 36px; margin-bottom: 10px; display: block; color: #10b981;"></i>
+                    Không có bài đăng nào cần duyệt.
+                </div>`;
+                return;
+            }
+            
+            container.innerHTML = posts.map(p => {
+                const avatar = p.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.authorName || 'User')}&background=5e6ad2&color=fff`;
+                
+                let mediaHtml = '';
+                if (p.imageUrl) {
+                    mediaHtml = `<div style="margin-top: 10px;"><img src="${p.imageUrl}" style="max-width: 200px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;" onclick="window.open('${p.imageUrl}')"></div>`;
+                } else if (p.videoUrl) {
+                    mediaHtml = `<div style="margin-top: 10px;"><video src="${p.videoUrl}" controls style="max-width: 200px; max-height: 150px; border-radius: 8px; object-fit: cover;"></video></div>`;
+                }
+
+                return `
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border-color);">
+                        <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1;">
+                            <img src="${avatar}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">${p.authorName || 'Người dùng'}</div>
+                                <div style="font-size: 13px; color: var(--text-main); margin-bottom: 6px; white-space: pre-wrap;">${escapeHtml(p.content || '')}</div>
+                                ${mediaHtml}
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                                    ${p.createdAt ? new Date(p.createdAt).toLocaleString('vi-VN') : ''}
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; background: var(--primary-color); color: white;" onclick="approvePendingPost(${p.id})">Phê duyệt</button>
+                                    <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; background: #ff4d4f; color: white;" onclick="rejectPendingPost(${p.id})">Từ chối</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi tải danh sách bài viết.</div>';
+        }
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi kết nối.</div>';
+    }
+}
+
+window.approvePendingPost = async function(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/posts/${postId}/approve`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Đã phê duyệt bài viết! Hệ thống AI đang tiến hành kiểm duyệt...', 'success');
+            fetchPendingPosts();
+            updateAllManageCounts();
+        } else {
+            showToast(await res.text(), 'error');
+        }
+    } catch (e) {
+        showToast('Lỗi kết nối', 'error');
+    }
+};
+
+window.rejectPendingPost = async function(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/posts/${postId}/reject`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Đã từ chối bài viết.', 'success');
+            fetchPendingPosts();
+            updateAllManageCounts();
+        } else {
+            showToast(await res.text(), 'error');
+        }
+    } catch (e) {
+        showToast('Lỗi kết nối', 'error');
+    }
+};
+
+window.pinPost = async function(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/posts/${postId}/pin`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast("Đã ghim bài viết thành công!", "success");
+            location.reload();
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    }
+};
+
+window.unpinPost = async function(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/posts/${postId}/unpin`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast("Đã bỏ ghim bài viết thành công!", "success");
+            location.reload();
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    }
+};
+
+async function loadPinnedPosts(token, id) {
+    const container = document.getElementById('pinned-posts-container');
+    const listContainer = document.getElementById('pinned-posts-list');
+    if (!container || !listContainer) return;
+    
+    try {
+        const res = await fetch(`/api/communities/${id}/pinned-posts`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const posts = await res.json();
+            if (posts.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            listContainer.innerHTML = posts.map(post => {
+                const isMine = post.authorId === window.currentUser.id;
+                const isManager = window.isCurrentCommunityManager;
+                
+                let optionsHtml = '';
+                if (isMine || isManager) {
+                    optionsHtml = `
+                    <div class="post-options" style="position: absolute; top: 15px; right: 15px; z-index: 10;">
+                        <button class="options-btn" onclick="toggleDropdown('pinned-' + ${post.id})" style="background: none; border: none; font-size: 16px; color: var(--text-muted); cursor: pointer; padding: 5px;">
+                            <i class="fa-solid fa-ellipsis"></i>
+                          </button>
+                          <div id="dropdown-pinned-${post.id}" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 25px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 180px; z-index: 100;">
+                              ${isMine ? `
+                                  <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 8px 12px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
+                              ` : `
+                                  <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 8px 12px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Gỡ bài (BQT)</a>
+                              `}
+                              ${isManager ? `
+                                  <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                                  <a href="javascript:void(0)" onclick="unpinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack" style="transform: rotate(45deg); color: var(--primary-color);"></i> Bỏ ghim bài viết</a>
+                              ` : ''}
+                          </div>
+                      </div>
+                      `;
+                  }
+                  
+                  let mediaHtml = '';
+                  if (post.imageUrl) {
+                      mediaHtml = `<div class="post-image-placeholder text-center" style="margin-top: 10px;"><img src="${post.imageUrl}" style="max-width: 100%; border-radius: 8px; max-height: 200px; object-fit: contain;"></div>`;
+                  } else if (post.videoUrl) {
+                      mediaHtml = `<div class="post-video-placeholder text-center" style="margin-top: 10px;"><video src="${post.videoUrl}" controls style="max-width: 100%; border-radius: 8px; max-height: 200px; background: #000;"></video></div>`;
+                  }
+                  
+                  return `
+                      <div class="pinned-post-item" id="pinned-post-${post.id}" style="position: relative; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-main);">
+                          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                              <img src="${post.authorAvatar || '/uploads/default-avatar.png'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                              <div>
+                                  <div style="font-weight: 600; font-size: 13px; color: var(--text-main);">${escapeHtml(post.authorName)}</div>
+                                  <div style="font-size: 11px; color: var(--text-muted);">${timeSince(post.createdAt)}</div>
+                              </div>
+                          </div>
+                          ${optionsHtml}
+                          <div style="font-size: 13px; color: var(--text-main); line-height: 1.4; white-space: pre-wrap;">${escapeHtml(post.content || '')}</div>
+                          ${mediaHtml}
+                      </div>
+                  `;
+              }).join('');
+          }
+      } catch (e) {
+          console.error("Lỗi khi tải bài viết ghim", e);
+      }
+  }
+
+window.deletePost = function(postId) {
+    showConfirmModal(
+        'Xác nhận xóa bài viết',
+        'Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.',
+        async () => {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/posts/${postId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    showToast("Đã xóa bài viết thành công", "success");
+                    const el = document.getElementById('post-' + postId);
+                    const pinnedEl = document.getElementById('pinned-post-' + postId);
+                    if (el) el.remove();
+                    if (pinnedEl) pinnedEl.remove();
+                    
+                    // Hide pinned posts section if empty now
+                    const listContainer = document.getElementById('pinned-posts-list');
+                    if (listContainer && listContainer.children.length === 0) {
+                        const container = document.getElementById('pinned-posts-container');
+                        if (container) container.style.display = 'none';
+                    }
+                } else {
+                    showToast(await res.text(), "error");
+                }
+            } catch (e) {
+                showToast("Lỗi kết nối", "error");
+            }
+        }
+    );
+};
+
+window.reportPostInGroup = async function(postId) {
+    const reason = prompt("Nhập lý do báo cáo bài viết:");
+    if (!reason || !reason.trim()) return;
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/posts/${postId}/report`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reason: reason.trim(),
+                category: 'OTHER'
+            })
+        });
+        if (res.ok) {
+            showToast("Đã gửi báo cáo bài viết thành công", "success");
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    }
+};
+
+window.communityRules = [];
+
+async function fetchCommunityRulesManage() {
+    const container = document.getElementById('rules-list-container');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/rules`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            window.communityRules = await res.json();
+            renderCommunityRulesManage();
+        } else {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi tải danh sách quy tắc.</div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi kết nối.</div>';
+    }
+}
+
+function renderCommunityRulesManage() {
+    const container = document.getElementById('rules-list-container');
+    if (!container) return;
+    
+    if (window.communityRules.length === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">
+            <i class="fa-solid fa-gavel" style="font-size: 36px; margin-bottom: 10px; display: block; color: var(--text-muted);"></i>
+            Cộng đồng chưa thiết lập quy tắc nào.
+        </div>`;
+        return;
+    }
+    
+    container.innerHTML = window.communityRules.map((r, index) => `
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="flex: 1; min-width: 0; padding-right: 15px;">
+                <div style="font-weight: 700; font-size: 15px; color: var(--text-main); margin-bottom: 6px;">${index + 1}. ${escapeHtml(r.title)}</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">${escapeHtml(r.description)}</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="openRuleModal(${index})" style="padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;"><i class="fa-solid fa-pen"></i> Sửa</button>
+                <button class="btn btn-danger" onclick="deleteRule(${index})" style="padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; background: #ff4d4f; border: none; color: white;"><i class="fa-solid fa-trash-can"></i> Xóa</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.openRuleModal = function(index = -1) {
+    if (index === -1 && window.communityRules.length >= 10) {
+        showToast("Chỉ cấu hình tối đa 10 quy tắc nhóm.", "error");
+        return;
+    }
+    
+    document.getElementById('rule-id-input').value = index;
+    if (index >= 0) {
+        const rule = window.communityRules[index];
+        document.getElementById('rule-modal-title').innerText = "Sửa quy tắc nhóm";
+        document.getElementById('rule-title-input').value = rule.title;
+        document.getElementById('rule-desc-input').value = rule.description;
+    } else {
+        document.getElementById('rule-modal-title').innerText = "Thêm quy tắc nhóm";
+        document.getElementById('rule-title-input').value = "";
+        document.getElementById('rule-desc-input').value = "";
+    }
+    
+    document.getElementById('rule-modal').style.display = 'flex';
+};
+
+window.closeRuleModal = function() {
+    document.getElementById('rule-modal').style.display = 'none';
+};
+
+window.saveRule = async function() {
+    const index = parseInt(document.getElementById('rule-id-input').value, 10);
+    const title = document.getElementById('rule-title-input').value.trim();
+    const desc = document.getElementById('rule-desc-input').value.trim();
+    
+    if (!title || !desc) {
+        showToast("Vui lòng điền đầy đủ tiêu đề và mô tả quy tắc", "error");
+        return;
+    }
+    
+    closeRuleModal();
+    
+    if (index >= 0) {
+        window.communityRules[index].title = title;
+        window.communityRules[index].description = desc;
+    } else {
+        window.communityRules.push({
+            title: title,
+            description: desc
+        });
+    }
+    
+    await submitRulesUpdate();
+};
+
+window.deleteRule = function(index) {
+    showConfirmModal(
+        'Xác nhận xóa quy tắc',
+        'Bạn có chắc muốn xóa quy tắc này khỏi danh sách cộng đồng?',
+        async () => {
+            window.communityRules.splice(index, 1);
+            await submitRulesUpdate();
+        }
+    );
+};
+
+async function submitRulesUpdate() {
+    const token = localStorage.getItem('token');
+    const btnSave = document.getElementById('btn-save-rule');
+    if (btnSave) btnSave.disabled = true;
+    
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/rules`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(window.communityRules.map(r => ({ title: r.title, description: r.description })))
+        });
+        if (res.ok) {
+            showToast("Đã lưu quy tắc nhóm thành công!", "success");
+            fetchCommunityRulesManage();
+            updateAllManageCounts();
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    } finally {
+        if (btnSave) btnSave.disabled = false;
+    }
+}
+
+async function fetchCommunityLogs() {
+    const container = document.getElementById('logs-list-container');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/logs`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const logs = await res.json();
+            if (logs.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">
+                    <i class="fa-solid fa-clock-rotate-left" style="font-size: 36px; margin-bottom: 10px; display: block; color: var(--text-muted);"></i>
+                    Nhật ký hoạt động trống.
+                </div>`;
+                return;
+            }
+            
+            container.innerHTML = logs.map(l => {
+                const logTime = l.createdAt ? new Date(l.createdAt).toLocaleString('vi-VN') : '';
+                return `
+                    <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                        <div style="flex: 1; min-width: 0; padding-right: 15px; color: var(--text-main);">
+                            <span style="font-weight: 600;">${escapeHtml(l.adminName)}</span>
+                            <span style="margin-left: 5px;">${escapeHtml(l.action)}</span>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">${logTime}</div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi tải nhật ký hoạt động.</div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi kết nối.</div>';
+    }
+}
+
+window.toggleDropdown = function(postId) {
+    const dropdown = document.getElementById('dropdown-' + postId);
+    if (!dropdown) return;
+    const isShown = dropdown.style.display === 'block';
+    document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
+    dropdown.style.display = isShown ? 'none' : 'block';
+};
+
+window.addEventListener('click', (event) => {
+    if (!event.target.closest('.options-btn')) {
+        document.querySelectorAll('.dropdown-content').forEach(d => {
+            d.style.display = 'none';
+        });
+    }
+});

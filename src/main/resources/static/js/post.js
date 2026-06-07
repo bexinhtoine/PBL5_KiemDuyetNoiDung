@@ -228,6 +228,12 @@ async function toggleLike(postId, token) {
         likeBtn.classList.add('active');
         likeBtn.innerHTML = '<i class="fa-solid fa-heart" style="color: #f02849;"></i> Thích';
         likeCountSpan.innerText = currentCount + 1;
+        
+        // Hiệu ứng tim bay GSAP
+        const likeIcon = likeBtn.querySelector('i');
+        if (window.animateHeartBurst && likeIcon) {
+            window.animateHeartBurst(likeIcon);
+        }
     }
 
     try {

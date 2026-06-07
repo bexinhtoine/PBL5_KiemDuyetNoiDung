@@ -35,6 +35,8 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_posts_user_created ON posts(user_id, created_at DESC);");
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_created ON comments(post_id, created_at DESC);");
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC);");
+            jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_likes_post_user ON likes(post_id, user_id);");
+            jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_comment_likes_comment_user ON comment_likes(comment_id, user_id);");
             logger.info("Successfully created all optimized indexes.");
         } catch (Exception e) {
             logger.warn("Database migration/optimization warning: {}", e.getMessage());

@@ -293,4 +293,59 @@
             observer.observe(modal, { attributes: true, attributeFilter: ['class', 'style'] });
         });
     }
+
+    /**
+     * Floating Heart Bubble Burst Animation
+     * Spawns multiple heart particles that float upwards from the target element.
+     */
+    function animateHeartBurst(likeIcon) {
+        if (typeof gsap === 'undefined' || !likeIcon) return;
+
+        // 1. Scale pulse on the main icon
+        gsap.fromTo(likeIcon, 
+            { scale: 0.7 }, 
+            { scale: 1.3, duration: 0.15, yoyo: true, repeat: 1, ease: 'power2.out', clearProps: 'transform' }
+        );
+
+        // 2. Heart bubble burst particles
+        const rect = likeIcon.getBoundingClientRect();
+        const body = document.body;
+        const scrollX = window.scrollX || window.pageXOffset;
+        const scrollY = window.scrollY || window.pageYOffset;
+        const startX = rect.left + rect.width / 2 + scrollX;
+        const startY = rect.top + rect.height / 2 + scrollY;
+
+        for (let i = 0; i < 6; i++) {
+            const heart = document.createElement('i');
+            heart.className = 'fa-solid fa-heart floating-heart';
+            heart.style.position = 'absolute';
+            heart.style.left = `${startX}px`;
+            heart.style.top = `${startY}px`;
+            heart.style.color = '#f3425f';
+            heart.style.fontSize = `${gsap.utils.random(12, 22)}px`;
+            heart.style.pointerEvents = 'none';
+            heart.style.zIndex = '9999';
+            body.appendChild(heart);
+
+            // Random trajectory going upwards/sideways
+            const angle = gsap.utils.random(-Math.PI / 1.5, -Math.PI / 3); // -120deg to -60deg (upwards)
+            const distance = gsap.utils.random(50, 90);
+            const destX = Math.cos(angle) * distance;
+            const destY = Math.sin(angle) * distance;
+
+            gsap.to(heart, {
+                x: destX,
+                y: destY,
+                opacity: 0,
+                scale: 0.3,
+                rotation: gsap.utils.random(-60, 60),
+                duration: gsap.utils.random(0.7, 1.2),
+                ease: 'power2.out',
+                onComplete: () => heart.remove()
+            });
+        }
+    }
+
+    // Expose globally
+    window.animateHeartBurst = animateHeartBurst;
 })();

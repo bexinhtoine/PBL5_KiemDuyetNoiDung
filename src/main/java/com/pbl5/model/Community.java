@@ -29,6 +29,9 @@ public class Community {
     @Column(name = "require_approval", nullable = false, columnDefinition = "boolean default false")
     private Boolean requireApproval = false;
 
+    @Column(name = "require_post_approval", nullable = false, columnDefinition = "boolean default false")
+    private Boolean requirePostApproval = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -96,6 +99,14 @@ public class Community {
 
     public void setRequireApproval(Boolean requireApproval) {
         this.requireApproval = requireApproval;
+    }
+
+    public Boolean getRequirePostApproval() {
+        return requirePostApproval;
+    }
+
+    public void setRequirePostApproval(Boolean requirePostApproval) {
+        this.requirePostApproval = requirePostApproval;
     }
 
     public LocalDateTime getCreatedAt() {

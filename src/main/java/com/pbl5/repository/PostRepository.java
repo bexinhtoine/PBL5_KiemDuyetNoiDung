@@ -30,9 +30,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
        List<Post> findByCommunityIdAndStatusOrderByCreatedAtDesc(Long communityId, com.pbl5.enums.PostStatus status);
 
+       List<Post> findByCommunityIdAndStatusAndPinnedOrderByCreatedAtDesc(Long communityId, com.pbl5.enums.PostStatus status, boolean pinned);
+
        List<Post> findByCommunityIdOrderByCreatedAtDesc(Long communityId);
 
-       @Query("SELECT p FROM Post p WHERE (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') " +
+       @Query("SELECT p FROM Post p WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.user.id = :currentUserId) " +
                      "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) " +
                      "AND (" +
                      "  p.user.id = :currentUserId " +
@@ -64,7 +66,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
               "  :isAdminOrMod = true " +
               "  OR p.user.id = :currentUserId " +
               "  OR (" +
-              "    (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') AND (" +
+              "    (p.status = 'ACTIVE' OR p.status = 'PUBLISHED') AND (" +
               "      (p.community IS NULL AND (" +
               "        p.visibility = 'PUBLIC' " +
               "        OR (p.visibility = 'FRIENDS' AND EXISTS (" +
@@ -89,7 +91,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                @Param("isAdminOrMod") boolean isAdminOrMod,
                Pageable pageable);
 
-       @Query("SELECT DISTINCT p FROM Post p LEFT JOIN FETCH p.user LEFT JOIN FETCH p.processingModerator WHERE (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') AND " +
+       @Query("SELECT DISTINCT p FROM Post p LEFT JOIN FETCH p.user LEFT JOIN FETCH p.processingModerator WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED') AND " +
                      "(LOWER(p.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                      " LOWER(p.user.fullName) LIKE LOWER(CONCAT('%', :query, '%'))) " +
                      "ORDER BY p.createdAt DESC")

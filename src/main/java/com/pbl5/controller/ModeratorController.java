@@ -70,6 +70,9 @@ public class ModeratorController {
     @Autowired
     private com.pbl5.repository.CommunityMemberRepository communityMemberRepository;
 
+    @Autowired
+    private com.pbl5.service.CommunityService communityService;
+
     // ==================== KIỂM DUYỆT BÀI VIẾT ====================
 
     /** Lấy tất cả bài viết (để xem xét nội dung) */
@@ -945,27 +948,7 @@ public class ModeratorController {
         
         try {
             com.pbl5.model.Community community = commOpt.get();
-            User creator = community.getCreator();
-            String communityName = community.getName();
-
-            // Unlink posts
-            List<Post> posts = postRepository.findByCommunityIdOrderByCreatedAtDesc(id);
-            for(Post p : posts) {
-                p.setCommunity(null);
-                postRepository.save(p);
-            }
-            
-            // Delete members
-            communityMemberRepository.deleteByCommunityId(id);
-            
-            // Delete community
-            communityRepository.delete(community);
-
-            // Send notification to creator
-            if (creator != null) {
-                sendNotification(creator, moderator, "COMMUNITY_DELETED", "Cộng đồng " + communityName + " của bạn đã bị xóa bởi kiểm duyệt viên do vi phạm điều khoản.", "/html/communities.html");
-            }
-
+            communityService.deleteCommunityAndNotifyMembers(community, moderator);
             return ResponseEntity.ok(Map.of("message", "Đã xóa cộng đồng ID " + id));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi khi xóa cộng đồng: " + e.getMessage());

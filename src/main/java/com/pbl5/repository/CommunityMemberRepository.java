@@ -26,6 +26,8 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 
     List<CommunityMember> findByUserIdAndStatus(Long userId, CommunityMemberStatus status);
 
+    List<CommunityMember> findByUserId(Long userId);
+
     List<CommunityMember> findByCommunityId(Long communityId);
 
     @org.springframework.transaction.annotation.Transactional

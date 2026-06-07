@@ -94,8 +94,19 @@ public class PostService {
             post.setVisibility(community.getIsPrivate() ? PostVisibility.PRIVATE : PostVisibility.PUBLIC);
         }
 
-        // Đăng ngay, sau đó kiểm duyệt ở background để có thể xóa nếu vi phạm nặng.
-        post.setStatus(PostStatus.ACTIVE);
+        // Đặt trạng thái ban đầu dựa vào cấu hình duyệt của nhóm
+        PostStatus initialStatus = PostStatus.PENDING_REVIEW;
+        boolean triggerAiImmediately = true;
+
+        if (post.getCommunity() != null) {
+            if (post.getCommunity().getRequirePostApproval() != null && post.getCommunity().getRequirePostApproval()) {
+                // Kịch bản 1: Nhóm bật chế độ "Phê duyệt trước"
+                initialStatus = PostStatus.PENDING_COMM_ADMIN;
+                triggerAiImmediately = false;
+            }
+        }
+
+        post.setStatus(initialStatus);
         post.setBestScore(0.0);
         post.setNsfwScore(0.0);
         post.setViolenceScore(0.0);
@@ -108,16 +119,18 @@ public class PostService {
         // Lưu bài đăng
         Post savedPost = postRepository.save(post);
 
-        try {
-            moderationService.moderatePostAsync(
-                    savedPost.getId(),
-                    request.getContent(),
-                    request.getImageUrl(),
-                    request.getVideoUrl());
-        } catch (Exception e) {
-            // Bài viết đã được lưu; lỗi kiểm duyệt nền không được chặn luồng đăng bài.
-            System.err.println(
-                    "Không thể khởi chạy kiểm duyệt nền bài viết " + savedPost.getId() + ": " + e.getMessage());
+        if (triggerAiImmediately) {
+            try {
+                moderationService.moderatePostAsync(
+                        savedPost.getId(),
+                        request.getContent(),
+                        request.getImageUrl(),
+                        request.getVideoUrl());
+            } catch (Exception e) {
+                // Bài viết đã được lưu; lỗi kiểm duyệt nền không được chặn luồng đăng bài.
+                System.err.println(
+                        "Không thể khởi chạy kiểm duyệt nền bài viết " + savedPost.getId() + ": " + e.getMessage());
+            }
         }
 
         // Trả về thông tin bài đăng
@@ -158,6 +171,7 @@ public class PostService {
         response.setHateSpeechContentScore(post.getHateSpeechContentScore());
         response.setHateSpeechVideoScore(post.getHateSpeechVideoScore());
         response.setHateSpeechWord(post.getHateSpeechWord());
+        response.setPinned(post.isPinned());
         if (post.getCommunity() != null) {
             response.setCommunityId(post.getCommunity().getId());
             response.setCommunityName(post.getCommunity().getName());

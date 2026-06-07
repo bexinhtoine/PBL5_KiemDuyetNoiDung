@@ -97,20 +97,30 @@ public class PostController {
     @Autowired
     private BookmarkRepository bookmarkRepository;
 
+    @Autowired
+    private com.pbl5.repository.CommunityMemberRepository communityMemberRepository;
+
+    @Autowired
+    private com.pbl5.service.CommunityService communityService;
+
     private boolean canViewPost(Post p, User currentUser) {
         if (p == null || p.getUser() == null || currentUser == null) {
             return false;
         }
 
-        // Handle deleted/rejected posts with 3-day grace period
+        // Handle deleted/rejected/AI rejected posts with 3-day grace period
         if (p.getStatus() == com.pbl5.enums.PostStatus.REJECTED
-                || p.getStatus() == com.pbl5.enums.PostStatus.AUTO_REJECTED) {
+                || p.getStatus() == com.pbl5.enums.PostStatus.AUTO_REJECTED
+                || p.getStatus() == com.pbl5.enums.PostStatus.REJECTED_BY_AI) {
             if (currentUser.getRole() == com.pbl5.enums.Role.ADMIN
                     || currentUser.getRole() == com.pbl5.enums.Role.MODERATOR) {
                 return true;
             }
             if (p.getUser().getId().equals(currentUser.getId())) {
                 LocalDateTime deleteTime = p.getReviewedAt();
+                if (deleteTime == null) {
+                    deleteTime = p.getCreatedAt();
+                }
                 if (deleteTime != null && deleteTime.plusDays(3).isAfter(LocalDateTime.now())) {
                     return true;
                 }
@@ -127,8 +137,22 @@ public class PostController {
                 || currentUser.getRole() == com.pbl5.enums.Role.MODERATOR)
             return true;
 
-        // Other users can see pending review posts while they wait for review
-        // (the restriction for PENDING_REVIEW has been removed so they follow normal visibility rules)
+        // Community Owner/Admin can see pending posts of their community
+        if (p.getCommunity() != null) {
+            if (p.getStatus() == com.pbl5.enums.PostStatus.PENDING_COMM_ADMIN || p.getStatus() == com.pbl5.enums.PostStatus.PENDING_REVIEW) {
+                boolean isCommAdminOrOwner = communityMemberRepository.findByCommunityIdAndUserId(p.getCommunity().getId(), currentUser.getId())
+                        .map(m -> m.getRole() == com.pbl5.enums.CommunityRole.OWNER || m.getRole() == com.pbl5.enums.CommunityRole.ADMIN)
+                        .orElse(false);
+                if (isCommAdminOrOwner) return true;
+            }
+        }
+
+        // Other users should NOT see pending or deleted posts
+        if (p.getStatus() == com.pbl5.enums.PostStatus.PENDING_COMM_ADMIN
+                || p.getStatus() == com.pbl5.enums.PostStatus.PENDING_REVIEW
+                || p.getStatus() == com.pbl5.enums.PostStatus.DELETED) {
+            return false;
+        }
 
         if (p.getVisibility() == PostVisibility.PUBLIC || p.getVisibility() == null)
             return true;
@@ -290,14 +314,30 @@ public class PostController {
             return ResponseEntity.notFound().build();
 
         Post post = postOpt.get();
-        // Kiểm tra quyền xóa bài
-        if (!post.getUser().getId().equals(user.getId())) {
+        // Kiểm tra quyền xóa bài: tác giả bài viết, hoặc Admin/Mod hệ thống, hoặc Owner/Admin của cộng đồng chứa bài viết
+        boolean isAuthor = post.getUser() != null && post.getUser().getId().equals(user.getId());
+        boolean isSysAdminOrMod = user.getRole() == com.pbl5.enums.Role.ADMIN || user.getRole() == com.pbl5.enums.Role.MODERATOR;
+        boolean isCommManager = false;
+        if (post.getCommunity() != null) {
+            isCommManager = communityMemberRepository.findByCommunityIdAndUserId(post.getCommunity().getId(), user.getId())
+                    .map(m -> m.getRole() == com.pbl5.enums.CommunityRole.OWNER || m.getRole() == com.pbl5.enums.CommunityRole.ADMIN)
+                    .orElse(false);
+        }
+
+        if (!isAuthor && !isSysAdminOrMod && !isCommManager) {
             return ResponseEntity.status(403).body("Không có quyền xóa bài này.");
         }
 
         // Soft delete: thay đổi trạng thái sang DELETED thay vì xóa khỏi CSDL
         post.setStatus(PostStatus.DELETED);
         postRepository.save(post);
+
+        // Ghi log hoạt động nếu gỡ bởi admin nhóm
+        if (post.getCommunity() != null && isCommManager && !isAuthor) {
+            String authorName = post.getUser() != null ? post.getUser().getFullName() : "Ẩn danh";
+            communityService.logActivity(post.getCommunity(), user, "Đã xóa bài viết của " + authorName);
+        }
+
         return ResponseEntity.ok("Đã xóa bài viết thành công!");
     }
 

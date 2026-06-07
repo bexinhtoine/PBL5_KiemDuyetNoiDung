@@ -603,6 +603,11 @@ async function toggleLike(postId) {
             likeIcon.classList.add('fa-solid', 'text-red');
             likeBtn.style.color = 'var(--red-icon)';
             likeCountSpan.innerText = `Mọi người (${currentCount + 1})`;
+            
+            // Hiệu ứng tim bay GSAP
+            if (window.animateHeartBurst) {
+                window.animateHeartBurst(likeIcon);
+            }
         }
     }
 

@@ -10,15 +10,17 @@ public class CommunityResponse {
     private String coverUrl;
     private Boolean isPrivate;
     private Boolean requireApproval;
+    private Boolean requirePostApproval;
     private LocalDateTime createdAt;
     private Long creatorId;
     private String creatorName;
     private String membershipStatus;
+    private String membershipRole;
 
     public CommunityResponse() {}
 
     public CommunityResponse(Long id, String name, String description, String avatarUrl, String coverUrl,
-                             Boolean isPrivate, Boolean requireApproval, LocalDateTime createdAt,
+                             Boolean isPrivate, Boolean requireApproval, Boolean requirePostApproval, LocalDateTime createdAt,
                              Long creatorId, String creatorName) {
         this.id = id;
         this.name = name;
@@ -27,6 +29,7 @@ public class CommunityResponse {
         this.coverUrl = coverUrl;
         this.isPrivate = isPrivate;
         this.requireApproval = requireApproval;
+        this.requirePostApproval = requirePostApproval;
         this.createdAt = createdAt;
         this.creatorId = creatorId;
         this.creatorName = creatorName;
@@ -88,6 +91,14 @@ public class CommunityResponse {
         this.requireApproval = requireApproval;
     }
 
+    public Boolean getRequirePostApproval() {
+        return requirePostApproval;
+    }
+
+    public void setRequirePostApproval(Boolean requirePostApproval) {
+        this.requirePostApproval = requirePostApproval;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -118,5 +129,13 @@ public class CommunityResponse {
 
     public void setMembershipStatus(String membershipStatus) {
         this.membershipStatus = membershipStatus;
+    }
+
+    public String getMembershipRole() {
+        return membershipRole;
+    }
+
+    public void setMembershipRole(String membershipRole) {
+        this.membershipRole = membershipRole;
     }
 }

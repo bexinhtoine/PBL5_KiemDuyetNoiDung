@@ -216,9 +216,14 @@ public class ContentModerationService {
 
             Post post = postOptional.get();
 
-            if (isAutoRejected(moderationResult.getStatus())) {
+            PostStatus finalStatus = moderationResult.getStatus();
+            if (finalStatus == PostStatus.AUTO_REJECTED) {
+                finalStatus = PostStatus.REJECTED_BY_AI;
+            }
+
+            if (finalStatus == PostStatus.REJECTED_BY_AI) {
                 logger.warn(
-                        "[MODERATION] postId={} is AUTO_REJECTED, bestScore={} => updating status and penalizing violation points",
+                        "[MODERATION] postId={} is REJECTED_BY_AI, bestScore={} => updating status and penalizing violation points",
                         postId,
                         String.format("%.4f", moderationResult.getBestScore()));
 
@@ -254,15 +259,42 @@ public class ContentModerationService {
                         notification.put("link", notifEntity.getLink());
 
                         messagingTemplate.convertAndSend("/topic/notifications/" + author.getId(), notification);
-                        logger.info("[MODERATION] Sent AUTO_REJECTED notification to post author ID={}", postId);
+                        logger.info("[MODERATION] Sent REJECTED_BY_AI notification to post author ID={}", author.getId());
                     } catch (Exception notifEx) {
                         logger.error("[MODERATION] Notification delivery error: {}", notifEx.getMessage());
+                    }
+
+                    // Kịch bản 1 & 2: Gửi thông báo cho chủ nhóm nếu bài viết trong một group
+                    if (post.getCommunity() != null && post.getCommunity().getCreator() != null) {
+                        try {
+                            User creator = post.getCommunity().getCreator();
+                            com.pbl5.model.Notification commNotif = new com.pbl5.model.Notification();
+                            commNotif.setUser(creator);
+                            commNotif.setSender(null);
+                            commNotif.setType("POST_REJECTED_BY_AI");
+                            commNotif.setMessage("Bài viết của " + author.getFullName() + " trong cộng đồng \"" + post.getCommunity().getName() + "\" đã bị AI tự động gỡ bỏ do vi phạm tiêu chuẩn cộng đồng.");
+                            commNotif.setLink("/html/community.html?id=" + post.getCommunity().getId());
+                            commNotif = notificationRepository.save(commNotif);
+
+                            java.util.Map<String, Object> notification = new java.util.HashMap<>();
+                            notification.put("id", commNotif.getId());
+                            notification.put("type", "POST_REJECTED_BY_AI");
+                            notification.put("message", commNotif.getMessage());
+                            notification.put("senderId", null);
+                            notification.put("senderName", "Hệ thống");
+                            notification.put("senderAvatar", null);
+                            notification.put("link", commNotif.getLink());
+
+                            messagingTemplate.convertAndSend("/topic/notifications/" + creator.getId(), notification);
+                        } catch (Exception notifEx) {
+                            logger.error("[MODERATION] Notification delivery to community creator error: {}", notifEx.getMessage());
+                        }
                     }
                 }
             }
 
             // Luôn cập nhật tất cả điểm và dữ liệu kiểm duyệt, bất kể trạng thái
-            post.setStatus(moderationResult.getStatus());
+            post.setStatus(finalStatus);
             post.setBestScore(moderationResult.getBestScore());
             post.setNsfwScore(moderationResult.getNsfwScore());
             post.setViolenceScore(moderationResult.getViolenceScore());
@@ -360,7 +392,7 @@ public class ContentModerationService {
      * Kiểm tra xem bài đăng có bị từ chối tự động không
      */
     public boolean isAutoRejected(PostStatus status) {
-        return status == PostStatus.AUTO_REJECTED;
+        return status == PostStatus.AUTO_REJECTED || status == PostStatus.REJECTED_BY_AI;
     }
 
     /**

@@ -289,6 +289,7 @@ async function submitCreateCommunity() {
                 description: desc,
                 isPrivate: privacy === 'PRIVATE',
                 requireApproval: privacy === 'PRIVATE',
+                requirePostApproval: document.getElementById('new-community-post-approval').value === 'MANUAL',
                 avatarUrl: avatarUrl,
                 coverUrl: coverUrl
             })

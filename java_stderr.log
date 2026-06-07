@@ -1,4 +1,0 @@
-Jun 07, 2026 10:59:24 AM org.jline.utils.Log logr
-WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
-[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
-[main] WARNING org.mvndaemon.mvnd.client.DaemonParameters - Falling back to finding JAVA_HOME by running java executable available in PATH. You may want to avoid this time consuming task by setting JAVA_HOME environment variable or by passing java.home system property through command line or in one of mvnd configuration files.
