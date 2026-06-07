@@ -233,6 +233,15 @@ function renderReviewPostsTable(posts) {
             ? `border-left: 6px solid ${severityBorderColor};`
             : `border-left: 6px solid ${severityColor};`;
 
+        let communityInfoHtml = '';
+        if (post.communityId) {
+            communityInfoHtml = `
+                <div style="font-size: 11.5px; color: var(--mod-primary); margin-top: 4px; font-weight: 700; background: rgba(0, 70, 160, 0.08); display: inline-block; padding: 2px 8px; border-radius: 4px;">
+                    <i class="fa-solid fa-users-rectangle"></i> ${escapeHtml(post.communityName)}
+                </div>
+            `;
+        }
+
         return `
         <article class="${cardClass}" style="${severityStyle} position: relative; margin-bottom: 24px;">
             ${reviewedHeaderHtml}
@@ -258,6 +267,7 @@ function renderReviewPostsTable(posts) {
                             <div>
                                 <div class="review-author-name" style="font-weight: 700; color: var(--text-primary); font-size: 14px;">${escapeHtml(post.authorName || 'Ẩn danh')}</div>
                                 <div class="review-post-time-sub" style="font-size: 11px; color: var(--text-secondary);">${new Date(post.createdAt).toLocaleString('vi-VN')}</div>
+                                ${communityInfoHtml}
                             </div>
                         </div>
                         <div class="review-post-id-badge" style="background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">#P-${post.id}</div>

@@ -158,8 +158,14 @@ function renderPostDetail(post) {
         document.querySelector('.post-media-viewer').style.backgroundColor = '#1c1e21';
     }
 
-    // Author
-    document.getElementById('post-author-name').innerHTML = `<a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${post.authorName}</a>`;
+    let authorHtml = `<a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit; font-weight:600;">${post.authorName}</a>`;
+    if (post.communityName && post.communityId) {
+        authorHtml += `
+            <i class="fa-solid fa-caret-right" style="margin: 0 6px; color: var(--text-muted); font-size: 13px;"></i>
+            <a href="/html/community.html?id=${post.communityId}" style="text-decoration:none; color:var(--primary-color); font-weight: 600;">${post.communityName}</a>
+        `;
+    }
+    document.getElementById('post-author-name').innerHTML = authorHtml;
     const authorAvatar = post.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=5e6ad2&color=fff`;
     const authorAvatarImg = document.getElementById('post-author-avatar');
     authorAvatarImg.src = authorAvatar;
@@ -520,28 +526,29 @@ function timeSince(dateString) {
 }
 
 async function deleteComment(commentId) {
-    if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
-    const token = localStorage.getItem('token');
-    const postId = new URLSearchParams(window.location.search).get('id');
-    try {
-        const res = await fetch(`/api/posts/comments/${commentId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            // Update count locally
-            const commentCountSpan = document.getElementById('comment-count');
-            let currentCount = parseInt(commentCountSpan.innerText) || 0;
-            if (currentCount > 0) commentCountSpan.innerText = currentCount - 1;
+    showConfirmModal('Xóa bình luận', 'Bạn có chắc chắn muốn xóa bình luận này?', async () => {
+        const token = localStorage.getItem('token');
+        const postId = new URLSearchParams(window.location.search).get('id');
+        try {
+            const res = await fetch(`/api/posts/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                // Update count locally
+                const commentCountSpan = document.getElementById('comment-count');
+                let currentCount = parseInt(commentCountSpan.innerText) || 0;
+                if (currentCount > 0) commentCountSpan.innerText = currentCount - 1;
 
-            fetchComments(postId, token);
-        } else {
-            const data = await res.json();
-            alert(data.message || 'Lỗi khi xóa bình luận');
+                fetchComments(postId, token);
+            } else {
+                const data = await res.json();
+                showToast(data.message || 'Lỗi khi xóa bình luận', 'error');
+            }
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
-    }
+    });
 }
 
 window.startEditComment = function (commentId, currentContent) {
@@ -714,25 +721,27 @@ window.togglePostMenu = function (event) {
     }
 };
 
-window.deletePostDetail = async function (postId) {
-    if (!confirm('Bạn có chắc chắn muốn chuyển bài viết này vào thùng rác?')) return;
-
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`/api/posts/${postId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            alert('Bài viết đã được chuyển vào thùng rác.');
-            window.location.href = '/html/home.html';
-        } else {
-            const txt = await res.text();
-            alert("Lỗi: " + txt);
+window.deletePostDetail = function (postId) {
+    showConfirmModal('Xóa bài viết', 'Bạn có chắc chắn muốn chuyển bài viết này vào thùng rác?', async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                showToast('Bài viết đã được chuyển vào thùng rác.', 'success');
+                setTimeout(() => {
+                    window.location.href = '/html/home.html';
+                }, 1500);
+            } else {
+                const txt = await res.text();
+                showToast("Lỗi: " + txt, "error");
+            }
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
-    }
+    });
 };
 
 window.openAppealModal = function (postId) {

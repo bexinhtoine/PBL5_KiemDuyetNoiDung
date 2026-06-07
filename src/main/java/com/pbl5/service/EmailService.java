@@ -37,8 +37,16 @@ public class EmailService {
         email.setSubject(subject);
         email.setText(message);
 
-        // Gửi email qua JavaMailSender
-        mailSender.send(email);
+        try {
+            // Gửi email qua JavaMailSender
+            mailSender.send(email);
+            System.out.println("Email sent successfully to: " + to);
+        } catch (Exception e) {
+            System.err.println("Failed to send verification email to " + to + ": " + e.getMessage());
+            System.out.println("====================================================");
+            System.out.println("DEV MODE: Verification code (PIN) for " + to + " is: " + token);
+            System.out.println("====================================================");
+        }
     }
 
     /**
@@ -60,8 +68,16 @@ public class EmailService {
         email.setSubject(subject);
         email.setText(message);
 
-        // Gửi email qua JavaMailSender
-        mailSender.send(email);
+        try {
+            // Gửi email qua JavaMailSender
+            mailSender.send(email);
+            System.out.println("Reset password email sent successfully to: " + to);
+        } catch (Exception e) {
+            System.err.println("Failed to send reset password email to " + to + ": " + e.getMessage());
+            System.out.println("====================================================");
+            System.out.println("DEV MODE: Reset password PIN for " + to + " is: " + token);
+            System.out.println("====================================================");
+        }
     }
 
     /**
@@ -86,6 +102,11 @@ public class EmailService {
         email.setTo(to);
         email.setSubject(subject);
         email.setText(message);
-        mailSender.send(email);
+        try {
+            mailSender.send(email);
+            System.out.println("Lock email sent successfully to: " + to);
+        } catch (Exception e) {
+            System.err.println("Failed to send lock email to " + to + ": " + e.getMessage());
+        }
     }
 }

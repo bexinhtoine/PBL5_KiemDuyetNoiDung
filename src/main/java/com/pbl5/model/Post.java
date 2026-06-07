@@ -81,6 +81,10 @@ public class Post extends BaseContent {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "community_id", nullable = true)
+    private Community community;
+
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Like> likes = new ArrayList<>();
 
@@ -301,5 +305,13 @@ public class Post extends BaseContent {
 
     public void setHateSpeechVideoScore(Double hateSpeechVideoScore) {
         this.hateSpeechVideoScore = hateSpeechVideoScore;
+    }
+
+    public Community getCommunity() {
+        return community;
+    }
+
+    public void setCommunity(Community community) {
+        this.community = community;
     }
 }

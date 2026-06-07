@@ -339,6 +339,14 @@ function renderProfilePosts(posts) {
             </div>
         ` : '';
 
+        let authorHtml = `<a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit; font-weight:600;">${post.authorName}</a>`;
+        if (post.communityName && post.communityId) {
+            authorHtml += `
+                <i class="fa-solid fa-caret-right" style="margin: 0 6px; color: var(--text-muted); font-size: 13px;"></i>
+                <a href="/html/community.html?id=${post.communityId}" style="text-decoration:none; color:var(--primary-color); font-weight: 600;">${post.communityName}</a>
+            `;
+        }
+
         let postHtml = `
         <article class="card post" id="post-${post.id}" ${(isRejected || isPending || isDeleted) ? 'style="opacity: 0.8; border: 1px solid ' + (isRejected ? '#ff8182' : (isPending ? '#fab005' : '#ccc')) + ';"' : ''}>
             <div class="post-header">
@@ -346,7 +354,7 @@ function renderProfilePosts(posts) {
                     <img src="${post.authorAvatar || '/uploads/default-avatar.png'}" alt="Avatar" class="avatar-medium" onerror="this.src='/uploads/default-avatar.png'">
                 </a>
                 <div class="post-meta">
-                    <h4 class="post-author"><a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${post.authorName}</a></h4>
+                    <h4 class="post-author">${authorHtml}</h4>
                     <span class="post-time"><a href="/html/post.html?id=${post.id}" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
@@ -514,47 +522,47 @@ window.onclick = function (event) {
     }
 }
 
-async function deletePost(postId) {
-    if (!confirm('Bạn có chắc chắn muốn chuyển bài viết này vào thùng rác?')) return;
-
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`/api/posts/${postId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            // Tải lại để hiển thị trạng thái đã xóa
-            if (typeof loadUserPosts === 'function') loadUserPosts();
-            else window.location.reload();
-        } else {
-            const txt = await res.text();
-            alert("Lỗi: " + txt);
+function deletePost(postId) {
+    showConfirmModal('Xóa bài viết', 'Bạn có chắc chắn muốn chuyển bài viết này vào thùng rác?', async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                // Tải lại để hiển thị trạng thái đã xóa
+                if (typeof loadUserPosts === 'function') loadUserPosts();
+                else window.location.reload();
+            } else {
+                const txt = await res.text();
+                showToast("Lỗi: " + txt, "error");
+            }
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
-    }
+    });
 }
 
-async function restorePost(postId) {
-    if (!confirm('Bạn có chắc chắn muốn khôi phục bài viết này không?')) return;
-
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`/api/posts/${postId}/restore`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            if (typeof loadUserPosts === 'function') loadUserPosts();
-            else window.location.reload();
-        } else {
-            const txt = await res.text();
-            alert("Lỗi: " + txt);
+function restorePost(postId) {
+    showConfirmModal('Khôi phục bài viết', 'Bạn có chắc chắn muốn khôi phục bài viết này không?', async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/${postId}/restore`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                if (typeof loadUserPosts === 'function') loadUserPosts();
+                else window.location.reload();
+            } else {
+                const txt = await res.text();
+                showToast("Lỗi: " + txt, "error");
+            }
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
-    }
+    });
 }
 
 async function changeVisibility(postId, level) {
@@ -819,16 +827,17 @@ function acceptFriendRequest(id) {
         });
 }
 function removeFriend(id) {
-    if (!confirm("Bạn có chắc chắn muốn thực hiện thao tác này?")) return;
-    const token = localStorage.getItem('token');
-    fetch(`/api/friends/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-    })
-        .then(res => {
-            if (res.ok) location.reload();
-            else alert("Lỗi xóa/hủy");
-        });
+    showConfirmModal('Xác nhận thao tác', 'Bạn có chắc chắn muốn thực hiện thao tác này?', () => {
+        const token = localStorage.getItem('token');
+        fetch(`/api/friends/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => {
+                if (res.ok) location.reload();
+                else showToast("Lỗi xóa/hủy", "error");
+            });
+    });
 }
 // === FRIENDSHIP END ===
 
@@ -1057,6 +1066,14 @@ window.prependCreatedPostToFeed = function (post) {
     const isMine = true; // Bài mới tạo chắc chắn là của mình
 
     let authorAvatar = post.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=5e6ad2&color=fff`;
+    let authorHtml = `<a href="/html/profile.html" style="text-decoration:none; color:inherit; font-weight:600;">${post.authorName}</a>`;
+    if (post.communityName && post.communityId) {
+        authorHtml += `
+            <i class="fa-solid fa-caret-right" style="margin: 0 6px; color: var(--text-muted); font-size: 13px;"></i>
+            <a href="/html/community.html?id=${post.communityId}" style="text-decoration:none; color:var(--primary-color); font-weight: 600;">${post.communityName}</a>
+        `;
+    }
+
     let postHtml = `
     <article class="card post" id="post-${post.id}">
         <div class="post-header">
@@ -1064,7 +1081,7 @@ window.prependCreatedPostToFeed = function (post) {
                 <img src="${authorAvatar}" alt="Avatar" class="avatar-medium" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=5e6ad2&color=fff'">
             </a>
             <div class="post-meta">
-                <h4 class="post-author"><a href="/html/profile.html" style="text-decoration:none; color:inherit;">${post.authorName}</a></h4>
+                <h4 class="post-author">${authorHtml}</h4>
                 <span class="post-time">Vừa xong <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
             </div>
         </div>

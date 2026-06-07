@@ -292,6 +292,7 @@ function setupNavigation() {
             else if (id === 'nav-review-posts-view') targetSectionId = 'review-posts-view';
             else if (id === 'nav-manage-posts-view') targetSectionId = 'manage-posts-view';
             else if (id === 'nav-manage-users-view') targetSectionId = 'manage-users-view';
+            else if (id === 'nav-manage-communities-view') targetSectionId = 'manage-communities-view';
             else if (id === 'nav-reports-view') targetSectionId = 'reports-view';
             else if (id === 'nav-statistics-view') targetSectionId = 'statistics-view';
 
@@ -317,6 +318,8 @@ function setupNavigation() {
                 if (typeof renderManagePostsFeed === 'function') renderManagePostsFeed(window.cache.posts || []);
             } else if (targetSectionId === 'manage-users-view') {
                 if (typeof loadFlaggedUsers === 'function') await loadFlaggedUsers();
+            } else if (targetSectionId === 'manage-communities-view') {
+                if (typeof loadCommunities === 'function') await loadCommunities();
             } else if (targetSectionId === 'reports-view') {
                 if (typeof loadReports === 'function') await loadReports();
             } else if (targetSectionId === 'statistics-view') {
@@ -788,6 +791,15 @@ window.renderPostDetailContent = function (post) {
 
     const authorElem = document.getElementById('mod-post-modal-author');
     if (authorElem) authorElem.innerText = post.authorName || 'Ẩn danh';
+
+    const communityBadge = document.getElementById('mod-post-modal-community-badge');
+    const communityNameElem = document.getElementById('mod-post-modal-community-name');
+    if (post.communityName && communityBadge && communityNameElem) {
+        communityNameElem.innerText = post.communityName;
+        communityBadge.style.display = 'inline-flex';
+    } else if (communityBadge) {
+        communityBadge.style.display = 'none';
+    }
 
     const timeElem = document.getElementById('mod-post-modal-time');
     if (timeElem) timeElem.innerText = new Date(post.createdAt).toLocaleString('vi-VN');

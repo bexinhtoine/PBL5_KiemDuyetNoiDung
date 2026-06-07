@@ -9,8 +9,14 @@ import com.pbl5.model.User;
 import com.pbl5.repository.CommentRepository;
 import com.pbl5.repository.LikeRepository;
 import com.pbl5.repository.PostRepository;
+import com.pbl5.model.Community;
+import com.pbl5.repository.CommunityRepository;
+import com.pbl5.repository.CommunityMemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PostService {
@@ -26,6 +32,12 @@ public class PostService {
 
     @Autowired
     private CommentRepository commentRepository;
+
+    @Autowired
+    private CommunityRepository communityRepository;
+
+    @Autowired
+    private CommunityMemberRepository communityMemberRepository;
 
     /**
      * Tạo bài đăng mới với kiểm tra nội dung
@@ -66,6 +78,22 @@ public class PostService {
             }
         }
 
+        // Liên kết cộng đồng nếu có
+        if (request.getCommunityId() != null) {
+            Community community = communityRepository.findById(request.getCommunityId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cộng đồng."));
+            
+            boolean isMember = communityMemberRepository.existsByCommunityIdAndUserIdAndStatus(
+                    community.getId(), user.getId(), com.pbl5.enums.CommunityMemberStatus.ACTIVE);
+            
+            if (!isMember) {
+                throw new IllegalStateException("Bạn phải là thành viên chính thức để đăng bài vào cộng đồng này.");
+            }
+            
+            post.setCommunity(community);
+            post.setVisibility(community.getIsPrivate() ? PostVisibility.PRIVATE : PostVisibility.PUBLIC);
+        }
+
         // Đăng ngay, sau đó kiểm duyệt ở background để có thể xóa nếu vi phạm nặng.
         post.setStatus(PostStatus.ACTIVE);
         post.setBestScore(0.0);
@@ -99,7 +127,7 @@ public class PostService {
     /**
      * Convert Post entity thành PostResponse
      */
-    private PostResponse convertToResponse(Post post, User user) {
+    public PostResponse convertToResponse(Post post, User user) {
         long likeCount = likeRepository.countByPostId(post.getId());
         long commentCount = commentRepository.countByPostId(post.getId());
 
@@ -130,6 +158,16 @@ public class PostService {
         response.setHateSpeechContentScore(post.getHateSpeechContentScore());
         response.setHateSpeechVideoScore(post.getHateSpeechVideoScore());
         response.setHateSpeechWord(post.getHateSpeechWord());
+        if (post.getCommunity() != null) {
+            response.setCommunityId(post.getCommunity().getId());
+            response.setCommunityName(post.getCommunity().getName());
+        }
         return response;
+    }
+
+    public List<PostResponse> convertToResponses(List<Post> posts, User user) {
+        return posts.stream()
+                .map(post -> convertToResponse(post, user))
+                .collect(Collectors.toList());
     }
 }

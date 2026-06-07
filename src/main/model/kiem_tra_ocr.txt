@@ -612,3 +612,84 @@
 [EVAL] label=HATE score=0.986006
 [FINAL TEXT] len=26 text='mày làm không tau đập chết'
 [REQUEST] Complete best_score=0.9860 frames=0 violating_words=(Video:) (Content:)mày[B-T] làm[O] không[O] tau[O] đập[O] chết[I-T] detailed_tags=(Video:) (Content:)mày[B-T] làm[O] không[O] tau[O] đập[O] chết[I-T]
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[REQUEST] /api/moderate called
+[REQUEST] has_content=True has_image=False has_video=False
+[CONTENT] len=13 text='Alo mọi người'
+[VIHSD_SPEECH] Post does not contain video/audio
+[OCR] content text='Alo mọi người'
+[EVAL] label=CLEAN score=0.814998
+[FINAL TEXT] len=13 text='Alo mọi người'
+[REQUEST] Complete best_score=0.0000 frames=0 violating_words=(Video:) (Content:)alo[O] mọi[O] người[O] detailed_tags=(Video:) (Content:)alo[O] mọi[O] người[O]
+[REQUEST] /api/moderate called
+[REQUEST] has_content=True has_image=False has_video=False
+[CONTENT] len=4 text='Haha'
+[VIHSD_SPEECH] Post does not contain video/audio
+[OCR] content text='Haha'
+[EVAL] label=CLEAN score=0.812653
+[FINAL TEXT] len=4 text='Haha'
+[REQUEST] Complete best_score=0.0000 frames=0 violating_words=(Video:) (Content:)haha[O] detailed_tags=(Video:) (Content:)haha[O]
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup

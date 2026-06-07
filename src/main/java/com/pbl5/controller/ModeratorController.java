@@ -64,6 +64,12 @@ public class ModeratorController {
     @Autowired
     private com.pbl5.service.EmailService emailService;
 
+    @Autowired
+    private com.pbl5.repository.CommunityRepository communityRepository;
+
+    @Autowired
+    private com.pbl5.repository.CommunityMemberRepository communityMemberRepository;
+
     // ==================== KIỂM DUYỆT BÀI VIẾT ====================
 
     /** Lấy tất cả bài viết (để xem xét nội dung) */
@@ -139,6 +145,14 @@ public class ModeratorController {
                         map.put("moderationStartedAt", null);
                         map.put("processingModeratorId", null);
                         map.put("processingModeratorName", null);
+                    }
+
+                    if (p.getCommunity() != null) {
+                        map.put("communityId", p.getCommunity().getId());
+                        map.put("communityName", p.getCommunity().getName());
+                    } else {
+                        map.put("communityId", null);
+                        map.put("communityName", null);
                     }
                     return map;
                 }).collect(Collectors.toList());
@@ -895,6 +909,67 @@ public class ModeratorController {
         sendNotification(user, moderator, "USER_WARNED", message, "/html/home.html");
 
         return ResponseEntity.ok(Map.of("message", "Đã gửi cảnh cáo thành công cho người dùng " + user.getFullName()));
+    }
+
+    // ==================== KIỂM DUYỆT CỘNG ĐỒNG ====================
+
+    @GetMapping("/communities")
+    public ResponseEntity<?> getAllCommunities(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        User moderator = getAuthenticatedUser(authHeader);
+        if (moderator == null) return ResponseEntity.status(401).body("Unauthorized");
+
+        List<Map<String, Object>> communities = communityRepository.findAll().stream().map(c -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", c.getId());
+            map.put("name", c.getName());
+            map.put("description", c.getDescription());
+            map.put("avatarUrl", c.getAvatarUrl());
+            map.put("isPrivate", c.getIsPrivate());
+            map.put("createdAt", c.getCreatedAt());
+            if (c.getCreator() != null) {
+                map.put("creatorId", c.getCreator().getId());
+                map.put("creatorName", c.getCreator().getFullName());
+            }
+            return map;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(communities);
+    }
+
+    @DeleteMapping("/communities/{id}")
+    public ResponseEntity<?> deleteCommunity(@PathVariable Long id, @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        User moderator = getAuthenticatedUser(authHeader);
+        if (moderator == null) return ResponseEntity.status(401).body("Unauthorized");
+
+        Optional<com.pbl5.model.Community> commOpt = communityRepository.findById(id);
+        if (commOpt.isEmpty()) return ResponseEntity.notFound().build();
+        
+        try {
+            com.pbl5.model.Community community = commOpt.get();
+            User creator = community.getCreator();
+            String communityName = community.getName();
+
+            // Unlink posts
+            List<Post> posts = postRepository.findByCommunityIdOrderByCreatedAtDesc(id);
+            for(Post p : posts) {
+                p.setCommunity(null);
+                postRepository.save(p);
+            }
+            
+            // Delete members
+            communityMemberRepository.deleteByCommunityId(id);
+            
+            // Delete community
+            communityRepository.delete(community);
+
+            // Send notification to creator
+            if (creator != null) {
+                sendNotification(creator, moderator, "COMMUNITY_DELETED", "Cộng đồng " + communityName + " của bạn đã bị xóa bởi kiểm duyệt viên do vi phạm điều khoản.", "/html/communities.html");
+            }
+
+            return ResponseEntity.ok(Map.of("message", "Đã xóa cộng đồng ID " + id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi xóa cộng đồng: " + e.getMessage());
+        }
     }
 
     private void sendNotification(User recipient, User sender, String type, String message, String link) {

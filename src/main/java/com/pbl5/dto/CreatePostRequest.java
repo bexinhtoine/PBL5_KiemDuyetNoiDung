@@ -5,6 +5,7 @@ public class CreatePostRequest {
     private String imageUrl;
     private String videoUrl;
     private String visibility;
+    private Long communityId;
 
     public CreatePostRequest() {
     }
@@ -46,5 +47,13 @@ public class CreatePostRequest {
 
     public void setVisibility(String visibility) {
         this.visibility = visibility;
+    }
+
+    public Long getCommunityId() {
+        return communityId;
+    }
+
+    public void setCommunityId(Long communityId) {
+        this.communityId = communityId;
     }
 }

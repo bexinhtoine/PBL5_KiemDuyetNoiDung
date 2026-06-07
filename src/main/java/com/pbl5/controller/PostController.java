@@ -652,6 +652,10 @@ public class PostController {
                     resp.setHateSpeechContentScore(post.getHateSpeechContentScore());
                     resp.setHateSpeechVideoScore(post.getHateSpeechVideoScore());
                     resp.setHateSpeechWord(post.getHateSpeechWord());
+                    if (post.getCommunity() != null) {
+                        resp.setCommunityId(post.getCommunity().getId());
+                        resp.setCommunityName(post.getCommunity().getName());
+                    }
                     responses.add(resp);
                 }
             } catch (Exception e) {
@@ -728,6 +732,10 @@ public class PostController {
         response.setHateSpeechContentScore(post.getHateSpeechContentScore());
         response.setHateSpeechVideoScore(post.getHateSpeechVideoScore());
         response.setHateSpeechWord(post.getHateSpeechWord());
+        if (post.getCommunity() != null) {
+            response.setCommunityId(post.getCommunity().getId());
+            response.setCommunityName(post.getCommunity().getName());
+        }
 
         // Set bookmark state
         if (currentUser != null) {

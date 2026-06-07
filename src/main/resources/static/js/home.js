@@ -271,6 +271,14 @@ function prependCreatedPostToFeed(post) {
     else visibilityIcon = '<i class="fa-solid fa-lock" style="margin-left: 5px; font-size: 11px;"></i>';
     const isMine = post.mine ?? post.isMine ?? false;
 
+    let authorHtml = `<a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit; font-weight:600;">${post.authorName}</a>`;
+    if (post.communityName && post.communityId) {
+        authorHtml += `
+            <i class="fa-solid fa-caret-right" style="margin: 0 6px; color: var(--text-muted); font-size: 13px;"></i>
+            <a href="/html/community.html?id=${post.communityId}" style="text-decoration:none; color:var(--primary-color); font-weight: 600;">${post.communityName}</a>
+        `;
+    }
+
     let postHtml = `
         <article class="card post" id="post-${post.id}">
             <div class="post-header">
@@ -278,7 +286,7 @@ function prependCreatedPostToFeed(post) {
                     <img src="${post.authorAvatar}" alt="Avatar" class="avatar-medium" onerror="this.src='/uploads/default-avatar.png'">
                 </a>
                 <div class="post-meta">
-                    <h4 class="post-author"><a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${post.authorName}</a></h4>
+                    <h4 class="post-author">${authorHtml}</h4>
                     <span class="post-time"><a href="/html/post.html?id=${post.id}" style="text-decoration:none; color:inherit;">Vừa xong</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
@@ -433,6 +441,14 @@ function renderPosts(posts, token) {
             `;
         }
 
+        let authorHtml = `<a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit; font-weight:600;">${post.authorName}</a>`;
+        if (post.communityName && post.communityId) {
+            authorHtml += `
+                <i class="fa-solid fa-caret-right" style="margin: 0 6px; color: var(--text-muted); font-size: 13px;"></i>
+                <a href="/html/community.html?id=${post.communityId}" style="text-decoration:none; color:var(--primary-color); font-weight: 600;">${post.communityName}</a>
+            `;
+        }
+
         let postHtml = `
         <article class="card post" id="post-${post.id}"${cardStyle}>
             ${warningBanner}
@@ -441,7 +457,7 @@ function renderPosts(posts, token) {
                     <img src="${post.authorAvatar}" alt="Avatar" class="avatar-medium" loading="lazy" onerror="this.src='/uploads/default-avatar.png'">
                 </a>
                 <div class="post-meta">
-                    <h4 class="post-author"><a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${post.authorName}</a></h4>
+                    <h4 class="post-author">${authorHtml}</h4>
                     <span class="post-time"><a href="/html/post.html?id=${post.id}" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
@@ -625,33 +641,38 @@ window.handleGlobalSearch = function (query) {
     searchTimeout = setTimeout(async () => {
         const token = localStorage.getItem('token');
         try {
-            // Fetch both users and posts in parallel
-            const [usersRes, postsRes] = await Promise.all([
+            // Fetch users, posts, and communities in parallel
+            const [usersRes, postsRes, communitiesRes] = await Promise.all([
                 fetch(`/api/users/search?q=${encodeURIComponent(query)}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
                 fetch(`/api/posts/search?q=${encodeURIComponent(query)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`/api/communities/search?q=${encodeURIComponent(query)}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
 
             let users = [];
             let posts = [];
+            let communities = [];
 
             if (usersRes.ok) users = await usersRes.json();
             if (postsRes.ok) posts = await postsRes.json();
+            if (communitiesRes.ok) communities = await communitiesRes.json();
 
-            renderSearchResults(users, posts, query);
+            renderSearchResults(users, posts, communities, query);
         } catch (err) {
             console.error("Lỗi tìm kiếm:", err);
         }
     }, 300);
 };
 
-function renderSearchResults(users, posts, query) {
+function renderSearchResults(users, posts, communities, query) {
     const resultsContainer = document.getElementById('global-search-results');
 
-    if (users.length === 0 && posts.length === 0) {
+    if (users.length === 0 && posts.length === 0 && (!communities || communities.length === 0)) {
         resultsContainer.innerHTML = '<div style="padding: 15px; text-align: center; color: #65676b; font-size: 14px;">Không tìm thấy kết quả phù hợp.</div>';
     } else {
         let html = '';
@@ -667,6 +688,23 @@ function renderSearchResults(users, posts, query) {
                         <div class="search-item-info">
                             <span class="user-name-result">${user.fullName}</span>
                             <span class="search-item-sub">Người dùng</span>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        // Communities Section
+        if (communities && communities.length > 0) {
+            html += '<div class="search-section-header">Cộng đồng</div>';
+            html += communities.slice(0, 5).map(c => {
+                const avatarHtml = c.avatarUrl ? `<img src="${c.avatarUrl}" alt="Avatar">` : `<div style="width:36px; height:36px; border-radius:50%; background:var(--bg-main); display:flex; align-items:center; justify-content:center; color:var(--primary-color);"><i class="fa-solid fa-users"></i></div>`;
+                return `
+                    <a href="/html/community.html?id=${c.id}" class="search-result-item">
+                        ${avatarHtml}
+                        <div class="search-item-info">
+                            <span class="user-name-result">${c.name}</span>
+                            <span class="search-item-sub">${c.memberCount || 0} thành viên</span>
                         </div>
                     </a>
                 `;
@@ -717,26 +755,26 @@ window.addEventListener('click', function (event) {
 });
 
 // ===== API GỌI XÓA VÀ CHỈNH SỬA POST =====
-async function deletePost(postId) {
-    if (!confirm('Bạn có chắc chắn muốn chuyển bài viết này vào thùng rác?')) return;
-
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`/api/posts/${postId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            // Xóa khỏi giao diện trang chủ vì bị ẩn
-            const elm = document.getElementById('post-' + postId);
-            if (elm) elm.remove();
-        } else {
-            const txt = await res.text();
-            alert("Lỗi: " + txt);
+function deletePost(postId) {
+    showConfirmModal('Xóa bài viết', 'Bạn có chắc chắn muốn chuyển bài viết này vào thùng rác?', async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                // Xóa khỏi giao diện trang chủ vì bị ẩn
+                const elm = document.getElementById('post-' + postId);
+                if (elm) elm.remove();
+            } else {
+                const txt = await res.text();
+                showToast("Lỗi: " + txt, "error");
+            }
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
-    }
+    });
 }
 
 async function changeVisibility(postId, level) {
@@ -1181,31 +1219,32 @@ async function submitComment(postId) {
 
 // ======================= SIDEBAR SUGGESTIONS =======================
 async function deleteComment(postId, commentId) {
-    if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`/api/posts/comments/${commentId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            // Optimistic UI update: giảm số bình luận
-            const commentCountSpan = document.getElementById(`comment-count-${postId}`);
-            if (commentCountSpan) {
-                const countMatch = commentCountSpan.innerText.match(/\d+/);
-                let currentCount = countMatch ? parseInt(countMatch[0], 10) : 0;
-                if (currentCount > 0) {
-                    commentCountSpan.innerText = `Bình luận (${currentCount - 1})`;
+    showConfirmModal('Xóa bình luận', 'Bạn có chắc chắn muốn xóa bình luận này?', async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                // Optimistic UI update: giảm số bình luận
+                const commentCountSpan = document.getElementById(`comment-count-${postId}`);
+                if (commentCountSpan) {
+                    const countMatch = commentCountSpan.innerText.match(/\d+/);
+                    let currentCount = countMatch ? parseInt(countMatch[0], 10) : 0;
+                    if (currentCount > 0) {
+                        commentCountSpan.innerText = `Bình luận (${currentCount - 1})`;
+                    }
                 }
+                fetchComments(postId);
+            } else {
+                const data = await res.json();
+                showToast(data.message || 'Lỗi khi xóa bình luận', 'error');
             }
-            fetchComments(postId);
-        } else {
-            const data = await res.json();
-            alert(data.message || 'Lỗi khi xóa bình luận');
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
-    }
+    });
 }
 
 window.startEditComment = function (postId, commentId, currentContent) {

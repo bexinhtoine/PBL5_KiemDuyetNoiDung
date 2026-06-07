@@ -1,6 +1,4 @@
-Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-WARNING: A restricted method in java.lang.System has been called
-WARNING: java.lang.System::load has been called by org.apache.tomcat.jni.Library in an unnamed module (file:/C:/Users/DELL/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.20/tomcat-embed-core-10.1.20.jar)
-WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
-WARNING: Restricted methods will be blocked in a future release unless native access is enabled
-
+Jun 07, 2026 10:59:24 AM org.jline.utils.Log logr
+WARNING: Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.jline - Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+[main] WARNING org.mvndaemon.mvnd.client.DaemonParameters - Falling back to finding JAVA_HOME by running java executable available in PATH. You may want to avoid this time consuming task by setting JAVA_HOME environment variable or by passing java.home system property through command line or in one of mvnd configuration files.

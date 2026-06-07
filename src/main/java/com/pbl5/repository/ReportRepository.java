@@ -39,4 +39,8 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByPost(Post post);
 
     List<Report> findByComment(Comment comment);
+
+    /** Lấy danh sách report theo community (qua bài viết) */
+    @Query("SELECT r FROM Report r WHERE r.post.community.id = :communityId ORDER BY r.createdAt DESC")
+    List<Report> findByCommunityId(@Param("communityId") Long communityId);
 }

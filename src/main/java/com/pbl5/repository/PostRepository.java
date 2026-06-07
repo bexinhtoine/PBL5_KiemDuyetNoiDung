@@ -28,14 +28,30 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
        List<Post> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, com.pbl5.enums.PostStatus status);
 
+       List<Post> findByCommunityIdAndStatusOrderByCreatedAtDesc(Long communityId, com.pbl5.enums.PostStatus status);
+
+       List<Post> findByCommunityIdOrderByCreatedAtDesc(Long communityId);
+
        @Query("SELECT p FROM Post p WHERE (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') " +
-                     "AND (p.visibility = 'PUBLIC' " +
-                     "OR p.user.id = :currentUserId " +
-                     "OR (p.visibility = 'FRIENDS' AND EXISTS (" +
-                     "  SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
-                     "  AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
-                     "  OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))" +
-                     "))) " +
+                     "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) " +
+                     "AND (" +
+                     "  p.user.id = :currentUserId " +
+                     "  OR (p.community IS NULL AND (" +
+                     "    p.visibility = 'PUBLIC' " +
+                     "    OR (p.visibility = 'FRIENDS' AND EXISTS (" +
+                     "      SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
+                     "      AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
+                     "      OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))" +
+                     "    ))" +
+                     "  )) " +
+                      "  OR (p.community IS NOT NULL AND (" +
+                      "    p.community.creator.id = :currentUserId " +
+                      "    OR EXISTS (" +
+                      "      SELECT cm FROM CommunityMember cm WHERE cm.community = p.community " +
+                      "      AND cm.user.id = :currentUserId AND cm.status = 'ACCEPTED'" +
+                      "    )" +
+                      "  ))" +
+                     ") " +
                      "ORDER BY p.createdAt DESC")
        List<Post> findHomeFeed(@Param("currentUserId") Long currentUserId);
 
@@ -49,11 +65,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
               "  OR p.user.id = :currentUserId " +
               "  OR (" +
               "    (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') AND (" +
-              "      p.visibility = 'PUBLIC' " +
-              "      OR (p.visibility = 'FRIENDS' AND EXISTS (" +
-              "        SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
-              "        AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
-              "        OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))" +
+              "      (p.community IS NULL AND (" +
+              "        p.visibility = 'PUBLIC' " +
+              "        OR (p.visibility = 'FRIENDS' AND EXISTS (" +
+              "          SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
+              "          AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
+              "          OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))" +
+              "        ))" +
+              "      ))" +
+              "      OR (p.community IS NOT NULL AND (" +
+              "        p.community.creator.id = :currentUserId " +
+              "        OR EXISTS (" +
+              "          SELECT cm FROM CommunityMember cm WHERE cm.community = p.community " +
+              "          AND cm.user.id = :currentUserId AND cm.status = 'ACCEPTED'" +
+              "        )" +
               "      ))" +
               "    )" +
               "  )" +

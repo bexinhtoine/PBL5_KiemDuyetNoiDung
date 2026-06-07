@@ -72,6 +72,9 @@
                 <a href="#" class="nav-link" id="nav-manage-users-view">
                     <i class="fa-solid fa-users-gear"></i> Quản lý người dùng
                 </a>
+                <a href="#" class="nav-link" id="nav-manage-communities-view">
+                    <i class="fa-solid fa-users-rectangle"></i> Quản lý cộng đồng
+                </a>
                 <a href="#" class="nav-link" id="nav-reports-view">
                     <i class="fa-solid fa-flag"></i> Báo cáo vi phạm
                 </a>
@@ -309,6 +312,41 @@
                         <tbody id="users-list">
                             <tr>
                                 <td colspan="6" class="table-loading">Đang tải danh sách thành viên...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Section 4.5: Manage Communities -->
+            <section id="manage-communities-view" class="mod-section">
+                <div class="section-title">
+                    <h2>Quản lý cộng đồng</h2>
+                    <p>Danh sách các nhóm và thao tác quản lý chung.</p>
+                </div>
+
+                <div class="filter-bar" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <i class="fa-solid fa-search"
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #65676b;"></i>
+                        <input type="text" id="communities-search-input" placeholder="Tìm kiếm tên hoặc mô tả cộng đồng..."
+                            style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    </div>
+                </div>
+                <div class="card">
+                    <table class="mod-table">
+                        <thead>
+                            <tr>
+                                <th>Cộng đồng</th>
+                                <th>Chế độ</th>
+                                <th>Ngày tạo</th>
+                                <th>Người tạo</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="communities-list">
+                            <tr>
+                                <td colspan="5" class="table-loading">Đang tải danh sách cộng đồng...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -644,7 +682,10 @@
                         <img id="mod-post-modal-avatar" src="" alt="Avatar"
                             style="width: 40px; height: 40px; border-radius: 50%;">
                         <div>
-                            <div id="mod-post-modal-author" style="font-weight: 600; font-size: 15px;"></div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div id="mod-post-modal-author" style="font-weight: 600; font-size: 15px;"></div>
+                                <div id="mod-post-modal-community-badge" style="display: none; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; align-items: center; gap: 4px;"><i class="fa-solid fa-users"></i> <span id="mod-post-modal-community-name"></span></div>
+                            </div>
                             <div
                                 style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px;">
                                 <span id="mod-post-modal-time"></span>
@@ -1104,6 +1145,7 @@
     <script src="../js/moderator_review.js"></script>
     <script src="../js/moderator_manage_posts.js"></script>
     <script src="../js/moderator_users.js"></script>
+    <script src="../js/moderator_communities.js"></script>
     <script src="../js/moderator_reports.js"></script>
     <script src="../js/moderator_logs.js"></script>
 

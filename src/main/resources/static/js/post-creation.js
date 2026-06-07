@@ -271,6 +271,10 @@ async function submitModalPost() {
         visibility: visibility
     };
 
+    if (window.postCommunityId) {
+        postData.communityId = window.postCommunityId;
+    }
+
     try {
         btn.innerText = 'Đang đăng...';
         

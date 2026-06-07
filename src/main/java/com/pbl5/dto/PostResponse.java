@@ -204,4 +204,23 @@ public class PostResponse {
     public void setHateSpeechWord(String hateSpeechWord) {
         this.hateSpeechWord = hateSpeechWord;
     }
+
+    private Long communityId;
+    private String communityName;
+
+    public Long getCommunityId() {
+        return communityId;
+    }
+
+    public void setCommunityId(Long communityId) {
+        this.communityId = communityId;
+    }
+
+    public String getCommunityName() {
+        return communityName;
+    }
+
+    public void setCommunityName(String communityName) {
+        this.communityName = communityName;
+    }
 }
