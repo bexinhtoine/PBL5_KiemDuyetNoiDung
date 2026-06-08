@@ -693,3 +693,70 @@
 [INIT] Successfully loaded PhoBERT Hate Speech model
 [INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
 [MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[REQUEST] /api/moderate called
+[REQUEST] has_content=True has_image=False has_video=False
+[CONTENT] len=8 text='buồn qué'
+[VIHSD_SPEECH] Post does not contain video/audio
+[OCR] content text='buồn qué'
+[EVAL] label=CLEAN score=0.816852
+[FINAL TEXT] len=8 text='buồn qué'
+[REQUEST] Complete best_score=0.0000 frames=0 violating_words=(Video:) (Content:)buồn[O] qué[O] detailed_tags=(Video:) (Content:)buồn[O] qué[O]
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[REQUEST] /api/moderate called
+[REQUEST] has_content=True has_image=False has_video=False
+[CONTENT] len=8 text='Buồn quá'
+[VIHSD_SPEECH] Post does not contain video/audio
+[OCR] content text='Buồn quá'
+[EVAL] label=CLEAN score=0.810915
+[FINAL TEXT] len=8 text='Buồn quá'
+[REQUEST] Complete best_score=0.0000 frames=0 violating_words=(Video:) (Content:)buồn[O] quá[O] detailed_tags=(Video:) (Content:)buồn[O] quá[O]
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[REQUEST] /api/moderate called
+[REQUEST] has_content=True has_image=False has_video=False
+[CONTENT] len=8 text='Buồn qué'
+[VIHSD_SPEECH] Post does not contain video/audio
+[OCR] content text='Buồn qué'
+[EVAL] label=CLEAN score=0.816852
+[FINAL TEXT] len=8 text='Buồn qué'
+[REQUEST] Complete best_score=0.0000 frames=0 violating_words=(Video:) (Content:)buồn[O] qué[O] detailed_tags=(Video:) (Content:)buồn[O] qué[O]
+[REQUEST] /api/moderate called
+[REQUEST] has_content=True has_image=False has_video=False
+[CONTENT] len=4 text='Haha'
+[VIHSD_SPEECH] Post does not contain video/audio
+[OCR] content text='Haha'
+[EVAL] label=CLEAN score=0.812653
+[FINAL TEXT] len=4 text='Haha'
+[REQUEST] Complete best_score=0.0000 frames=0 violating_words=(Video:) (Content:)haha[O] detailed_tags=(Video:) (Content:)haha[O]

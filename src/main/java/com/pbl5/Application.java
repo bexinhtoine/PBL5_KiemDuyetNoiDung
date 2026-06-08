@@ -39,7 +39,7 @@ public class Application implements CommandLineRunner {
     // ===== CẤU HÌNH TÀI KHOẢN ADMIN =====
     private static final String ADMIN_USERNAME = "admin";
     private static final String ADMIN_PASSWORD = "Admin@123";
-    private static final String ADMIN_EMAIL    = "admin@lcnetwork.com";
+    private static final String ADMIN_EMAIL = "admin@lcnetwork.com";
     private static final String ADMIN_FULLNAME = "Administrator";
 
     public static void main(String[] args) {
@@ -92,4 +92,3 @@ public class Application implements CommandLineRunner {
         }
     }
 }
-

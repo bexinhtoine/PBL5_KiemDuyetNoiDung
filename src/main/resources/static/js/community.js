@@ -662,42 +662,57 @@ function renderPosts(posts, token) {
         const isMine = post.authorId === window.currentUser.id;
         const isManager = window.isCurrentCommunityManager;
         
-        let optionsHtml = '';
-        if (isMine || isManager) {
-            optionsHtml = `
-            <div class="post-options" style="position: absolute; top: 20px; right: 20px; z-index: 10;">
-                <button class="options-btn" onclick="toggleDropdown(${post.id})" style="background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; padding: 5px;">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-                <div id="dropdown-${post.id}" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 30px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 200px; z-index: 100;">
-                    ${isMine ? `
-                        <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
+        let dropdownHtml = '';
+        if (isMine) {
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="toggleBookmark(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-regular fa-bookmark"></i> Lưu bài viết</a>
+                <a href="javascript:void(0)" onclick="hidePost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết</a>
+                <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
+            `;
+            if (isManager) {
+                dropdownHtml += `
+                    <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                    ${post.pinned ? `
+                        <a href="javascript:void(0)" onclick="unpinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack" style="transform: rotate(45deg); color: var(--primary-color);"></i> Bỏ ghim bài viết</a>
                     ` : `
-                        <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Gỡ bài viết (BQT)</a>
+                        <a href="javascript:void(0)" onclick="pinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack"></i> Ghim bài viết</a>
                     `}
-                    ${isManager ? `
-                        <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
-                        ${post.pinned ? `
-                            <a href="javascript:void(0)" onclick="unpinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack" style="transform: rotate(45deg); color: var(--primary-color);"></i> Bỏ ghim bài viết</a>
-                        ` : `
-                            <a href="javascript:void(0)" onclick="pinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack"></i> Ghim bài viết</a>
-                        `}
-                    ` : ''}
-                </div>
-            </div>
+                `;
+            }
+        } else if (isManager) {
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="toggleBookmark(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-regular fa-bookmark"></i> Lưu bài viết</a>
+                <a href="javascript:void(0)" onclick="hidePost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết</a>
+                <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon); display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; font-size: 13px; font-weight: 600;"><i class="fa-regular fa-trash-can"></i> Gỡ bài viết (BQT)</a>
+                <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                ${post.pinned ? `
+                    <a href="javascript:void(0)" onclick="unpinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack" style="transform: rotate(45deg); color: var(--primary-color);"></i> Bỏ ghim bài viết</a>
+                ` : `
+                    <a href="javascript:void(0)" onclick="pinPost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-thumbtack"></i> Ghim bài viết</a>
+                `}
             `;
         } else {
-            optionsHtml = `
-            <div class="post-options" style="position: absolute; top: 20px; right: 20px; z-index: 10;">
-                <button class="options-btn" onclick="toggleDropdown(${post.id})" style="background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; padding: 5px;">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-                <div id="dropdown-${post.id}" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 30px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 200px; z-index: 100;">
-                    <a href="javascript:void(0)" onclick="reportPostInGroup(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-regular fa-flag"></i> Báo cáo bài viết</a>
-                </div>
-            </div>
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="toggleBookmark(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-regular fa-bookmark"></i> Lưu bài viết</a>
+                <a href="javascript:void(0)" onclick="hidePost(${post.id})" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết này</a>
+                <div style="height: 1px; background: var(--border-color); margin: 4px 0;"></div>
+                <a href="javascript:void(0)" onclick="reportPostToTarget(${post.id}, 'COMMUNITY')" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-regular fa-flag"></i> Báo cáo với chủ nhóm</a>
+                <a href="javascript:void(0)" onclick="reportPostToTarget(${post.id}, 'SYSTEM')" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px; text-decoration: none; color: var(--text-main); font-size: 13px; font-weight: 600;"><i class="fa-solid fa-shield-halved"></i> Báo cáo với quản trị riêng</a>
             `;
         }
+
+        const optionsHtml = `
+        <div class="post-options" style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+            <button class="options-btn" onclick="toggleDropdown(${post.id})" style="background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; padding: 5px;">
+                <i class="fa-solid fa-ellipsis"></i>
+            </button>
+            <div id="dropdown-${post.id}" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 30px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 200px; z-index: 100;">
+                ${dropdownHtml}
+            </div>
+        </div>
+        `;
 
         let tagsHtml = '';
         if (post.tags && post.tags.length > 0) {
@@ -715,7 +730,9 @@ function renderPosts(posts, token) {
                     <img src="${post.authorAvatar || '/uploads/default-avatar.png'}" alt="Avatar" class="avatar-medium">
                 </a>
                 <div class="post-meta">
-                    <h4 class="post-author"><a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${escapeHtml(post.authorName)}</a></h4>
+                    <h4 class="post-author">
+                        <a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${escapeHtml(post.authorName)}</a>
+                    </h4>
                     <span class="post-time">${timeSince(post.createdAt)}</span>
                 </div>
             </div>
@@ -2207,3 +2224,156 @@ window.addEventListener('click', (event) => {
         });
     }
 });
+
+let activeReportPostId = null;
+let activeReportCommentId = null;
+let activeReportTarget = 'SYSTEM';
+
+window.reportPostToTarget = function(postId, target) {
+    activeReportPostId = postId;
+    activeReportCommentId = null;
+    activeReportTarget = target || 'SYSTEM';
+    
+    const titleEl = document.getElementById('report-modal-title');
+    if (titleEl) {
+        if (target === 'COMMUNITY') {
+            titleEl.innerText = "Báo cáo với chủ nhóm";
+        } else {
+            titleEl.innerText = "Báo cáo với quản trị riêng";
+        }
+    }
+    document.getElementById('report-modal').style.display = 'flex';
+    document.getElementById('report-reason').value = '';
+
+    // Bind confirm button
+    const confirmBtn = document.getElementById('confirm-report-btn');
+    if (confirmBtn) {
+        confirmBtn.onclick = () => window.submitReport();
+    }
+};
+
+window.closeReportModal = function() {
+    document.getElementById('report-modal').style.display = 'none';
+    activeReportPostId = null;
+    activeReportCommentId = null;
+};
+
+window.submitReport = async function() {
+    const token = localStorage.getItem('token');
+    const reason = document.getElementById('report-reason').value.trim();
+    const category = document.getElementById('report-category').value;
+
+    if (!reason) {
+        showToast('Vui lòng nhập lý do báo cáo.', 'error');
+        return;
+    }
+
+    let endpoint = '';
+    if (activeReportPostId) {
+        endpoint = `/api/posts/${activeReportPostId}/report`;
+    } else if (activeReportCommentId) {
+        endpoint = `/api/posts/comments/${activeReportCommentId}/report`;
+    }
+
+    const payload = {
+        reason: reason,
+        category: category,
+        reportTarget: activeReportTarget || 'SYSTEM'
+    };
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            showToast('Cảm ơn bạn! Báo cáo đã được gửi.', 'success');
+            window.closeReportModal();
+        } else {
+            const err = await res.text();
+            showToast(err || 'Gửi báo cáo thất bại.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối mạng.', 'error');
+    }
+};
+
+window.hidePost = async function(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/posts/${postId}/hide`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            document.getElementById('post-' + postId).style.display = 'none';
+            showToast('Đã ẩn bài viết vĩnh viễn.', 'info');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+window.joinCommunityFromFeed = async function (event, commId, btn) {
+    if (event) event.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch(`/api/communities/${commId}/join`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Tham gia cộng đồng thành công!', 'success');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 3px;"></i>Đã tham gia';
+                btn.style.borderColor = '#10b981';
+                btn.style.color = '#10b981';
+                btn.disabled = true;
+                btn.onclick = null;
+            }
+        } else {
+            const errText = await res.text();
+            showToast(errText || 'Lỗi khi tham gia cộng đồng.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối mạng.', 'error');
+    }
+};
+
+window.addFriendFromFeed = async function(event, userId, btn) {
+    if (event) event.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch(`/api/friends/request/${userId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Đã gửi lời mời kết bạn!', 'success');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 3px;"></i>Đã gửi';
+                btn.style.borderColor = '#10b981';
+                btn.style.color = '#10b981';
+                btn.disabled = true;
+                btn.onclick = null;
+            }
+        } else {
+            const errText = await res.text();
+            showToast(errText || 'Lỗi khi gửi lời mời kết bạn.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối mạng.', 'error');
+    }
+};

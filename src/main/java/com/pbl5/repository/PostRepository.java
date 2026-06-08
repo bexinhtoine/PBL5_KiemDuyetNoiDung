@@ -18,103 +18,136 @@ public interface PostRepository extends JpaRepository<Post, Long> {
        List<Post> findModeratorPosts();
 
        /** Phân trang cho admin — load user và processingModerator tránh N+1 */
-       @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"user", "processingModerator"})
+       @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "user", "processingModerator" })
        Page<Post> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-       @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"user", "processingModerator"})
+       @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "user", "processingModerator" })
        List<Post> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
        List<Post> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+       /** Lấy bài đăng cá nhân PUBLIC từ người dùng khác (cho home feed) */
+       @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "user", "processingModerator" })
+       @Query("SELECT p FROM Post p WHERE p.community IS NULL " +
+              "AND p.visibility = com.pbl5.enums.PostVisibility.PUBLIC " +
+              "AND (p.status = 'ACTIVE' OR p.status = 'PUBLISHED') " +
+              "AND p.user.id != :currentUserId " +
+              "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) " +
+              "ORDER BY p.createdAt DESC")
+       List<Post> findPublicPersonalPostsForFeed(@Param("currentUserId") Long currentUserId, Pageable pageable);
+
+       /** Lấy bài đăng cá nhân FRIENDS từ bạn bè đã kết bạn (cho home feed) */
+       @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "user", "processingModerator" })
+       @Query("SELECT p FROM Post p WHERE p.community IS NULL " +
+              "AND p.visibility = com.pbl5.enums.PostVisibility.FRIENDS " +
+              "AND (p.status = 'ACTIVE' OR p.status = 'PUBLISHED') " +
+              "AND p.user.id != :currentUserId " +
+              "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) " +
+              "AND EXISTS (SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
+              "  AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
+              "  OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))) " +
+              "ORDER BY p.createdAt DESC")
+       List<Post> findFriendsPersonalPostsForFeed(@Param("currentUserId") Long currentUserId, Pageable pageable);
 
        List<Post> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, com.pbl5.enums.PostStatus status);
 
        List<Post> findByCommunityIdAndStatusOrderByCreatedAtDesc(Long communityId, com.pbl5.enums.PostStatus status);
 
-       List<Post> findByCommunityIdAndStatusInOrderByCreatedAtDesc(Long communityId, List<com.pbl5.enums.PostStatus> statuses);
+       List<Post> findByCommunityIdAndStatusInOrderByCreatedAtDesc(Long communityId,
+                     List<com.pbl5.enums.PostStatus> statuses);
 
-       List<Post> findByCommunityIdAndStatusAndPinnedOrderByCreatedAtDesc(Long communityId, com.pbl5.enums.PostStatus status, boolean pinned);
+       List<Post> findByCommunityIdAndStatusAndPinnedOrderByCreatedAtDesc(Long communityId,
+                     com.pbl5.enums.PostStatus status, boolean pinned);
 
        List<Post> findByCommunityIdOrderByCreatedAtDesc(Long communityId);
 
-       @Query("SELECT p FROM Post p WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW' OR p.user.id = :currentUserId) " +
-                     "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) " +
+       @Query("SELECT p FROM Post p WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW' OR p.user.id = :currentUserId) "
+                     +
+                     "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) "
+                     +
                      "AND (" +
                      "  p.user.id = :currentUserId " +
                      "  OR (p.community IS NULL AND (" +
-                     "    p.visibility = 'PUBLIC' " +
-                     "    OR (p.visibility = 'FRIENDS' AND EXISTS (" +
+                     "    p.visibility = com.pbl5.enums.PostVisibility.PUBLIC " +
+                     "    OR (p.visibility = com.pbl5.enums.PostVisibility.FRIENDS AND EXISTS (" +
                      "      SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
                      "      AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
                      "      OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))" +
                      "    ))" +
                      "  )) " +
-                      "  OR (p.community IS NOT NULL AND (" +
-                      "    p.community.creator.id = :currentUserId " +
-                      "    OR EXISTS (" +
-                      "      SELECT cm FROM CommunityMember cm WHERE cm.community = p.community " +
-                      "      AND cm.user.id = :currentUserId AND cm.status = 'ACCEPTED'" +
-                      "    )" +
-                      "  ))" +
+                     "  OR (p.community IS NOT NULL AND (" +
+                     "    p.community.isPrivate = false " +
+                     "    OR p.community.creator.id = :currentUserId " +
+                     "    OR EXISTS (" +
+                     "      SELECT cm FROM CommunityMember cm WHERE cm.community = p.community " +
+                     "      AND cm.user.id = :currentUserId AND cm.status = 'ACTIVE'" +
+                     "    )" +
+                     "  ))" +
                      ") " +
                      "ORDER BY p.createdAt DESC")
        List<Post> findHomeFeed(@Param("currentUserId") Long currentUserId);
 
        @Query("SELECT DISTINCT p FROM Post p " +
-              "LEFT JOIN FETCH p.user " +
-              "LEFT JOIN FETCH p.processingModerator " +
-              "WHERE p.status <> 'DELETED' " +
-              "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) " +
-              "AND (" +
-              "  :isAdminOrMod = true " +
-              "  OR p.user.id = :currentUserId " +
-              "  OR (" +
-              "    (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW') AND (" +
-              "      (p.community IS NULL AND (" +
-              "        p.visibility = 'PUBLIC' " +
-              "        OR (p.visibility = 'FRIENDS' AND EXISTS (" +
-              "          SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
-              "          AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
-              "          OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))" +
-              "        ))" +
-              "      ))" +
-              "      OR (p.community IS NOT NULL AND (" +
-              "        p.community.creator.id = :currentUserId " +
-              "        OR EXISTS (" +
-              "          SELECT cm FROM CommunityMember cm WHERE cm.community = p.community " +
-              "          AND cm.user.id = :currentUserId AND cm.status = 'ACCEPTED'" +
-              "        )" +
-              "      ))" +
-              "    )" +
-              "  )" +
-              ") " +
-              "ORDER BY p.createdAt DESC")
+                     "LEFT JOIN FETCH p.user " +
+                     "LEFT JOIN FETCH p.processingModerator " +
+                     "WHERE p.status <> 'DELETED' " +
+                     "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) "
+                     +
+                     "AND (" +
+                     "  :isAdminOrMod = true " +
+                     "  OR p.user.id = :currentUserId " +
+                     "  OR (" +
+                     "    (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW') AND (" +
+                     "      (p.community IS NULL AND (" +
+                     "        p.visibility = com.pbl5.enums.PostVisibility.PUBLIC " +
+                     "        OR (p.visibility = com.pbl5.enums.PostVisibility.FRIENDS AND EXISTS (" +
+                     "          SELECT f FROM Friendship f WHERE f.status = 'ACCEPTED' " +
+                     "          AND ((f.requester.id = :currentUserId AND f.receiver.id = p.user.id) " +
+                     "          OR (f.receiver.id = :currentUserId AND f.requester.id = p.user.id))" +
+                     "        ))" +
+                     "      ))" +
+                     "      OR (p.community IS NOT NULL AND (" +
+                     "        p.community.isPrivate = false " +
+                     "        OR p.community.creator.id = :currentUserId " +
+                     "        OR EXISTS (" +
+                     "          SELECT cm FROM CommunityMember cm WHERE cm.community = p.community " +
+                     "          AND cm.user.id = :currentUserId AND cm.status = 'ACTIVE'" +
+                     "        )" +
+                     "      ))" +
+                     "    )" +
+                     "  )" +
+                     ") " +
+                     "ORDER BY p.createdAt DESC")
        List<Post> findHomeFeedPaged(
-               @Param("currentUserId") Long currentUserId,
-               @Param("isAdminOrMod") boolean isAdminOrMod,
-               Pageable pageable);
+                     @Param("currentUserId") Long currentUserId,
+                     @Param("isAdminOrMod") boolean isAdminOrMod,
+                     Pageable pageable);
 
-       @Query("SELECT DISTINCT p FROM Post p LEFT JOIN FETCH p.user LEFT JOIN FETCH p.processingModerator WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW') AND " +
+       @Query("SELECT DISTINCT p FROM Post p LEFT JOIN FETCH p.user LEFT JOIN FETCH p.processingModerator WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW') AND "
+                     +
                      "(LOWER(p.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                      " LOWER(p.user.fullName) LIKE LOWER(CONCAT('%', :query, '%'))) " +
                      "ORDER BY p.createdAt DESC")
        List<Post> searchPosts(@Param("query") String query);
 
        @Query("SELECT DISTINCT p FROM Post p " +
-              "LEFT JOIN FETCH p.user " +
-              "LEFT JOIN FETCH p.processingModerator " +
-              "LEFT JOIN p.tags t " +
-              "WHERE p.community.id = :communityId " +
-              "AND (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') " +
-              "AND (:search IS NULL OR :search = '' OR LOWER(p.content) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.user.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-              "AND (:tag IS NULL OR :tag = '' OR LOWER(t.name) = LOWER(:tag)) " +
-              "ORDER BY p.createdAt DESC")
+                     "LEFT JOIN FETCH p.user " +
+                     "LEFT JOIN FETCH p.processingModerator " +
+                     "LEFT JOIN p.tags t " +
+                     "WHERE p.community.id = :communityId " +
+                     "AND (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') " +
+                     "AND (:search IS NULL OR :search = '' OR LOWER(p.content) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.user.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) "
+                     +
+                     "AND (:tag IS NULL OR :tag = '' OR LOWER(t.name) = LOWER(:tag)) " +
+                     "ORDER BY p.createdAt DESC")
        List<Post> searchCommunityPosts(
-               @Param("communityId") Long communityId,
-               @Param("search") String search,
-               @Param("tag") String tag);
+                     @Param("communityId") Long communityId,
+                     @Param("search") String search,
+                     @Param("tag") String tag);
 
        @Query("SELECT p FROM Post p WHERE (p.status = 'REJECTED' OR p.status = 'AUTO_REJECTED') AND p.reviewedAt < :boundary")
        List<Post> findPostsForCleanup(@Param("boundary") java.time.LocalDateTime boundary);
 
-       List<Post> findByCommunityIdAndStatusAndCreatedAtAfterOrderByCreatedAtAsc(Long communityId, com.pbl5.enums.PostStatus status, java.time.LocalDateTime date);
+       List<Post> findByCommunityIdAndStatusAndCreatedAtAfterOrderByCreatedAtAsc(Long communityId,
+                     com.pbl5.enums.PostStatus status, java.time.LocalDateTime date);
 }

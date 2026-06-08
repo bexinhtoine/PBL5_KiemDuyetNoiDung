@@ -52,6 +52,9 @@ public class Report {
     @Column(name = "appealed_moderator")
     private String appealedModerator;
 
+    @Column(name = "report_target", columnDefinition = "varchar(50) default 'SYSTEM'")
+    private String reportTarget = "SYSTEM";
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // ===== GETTERS & SETTERS =====
@@ -88,6 +91,9 @@ public class Report {
 
     public String getAppealedModerator() { return appealedModerator; }
     public void setAppealedModerator(String appealedModerator) { this.appealedModerator = appealedModerator; }
+
+    public String getReportTarget() { return reportTarget; }
+    public void setReportTarget(String reportTarget) { this.reportTarget = reportTarget; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

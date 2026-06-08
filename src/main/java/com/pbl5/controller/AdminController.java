@@ -661,7 +661,7 @@ public class AdminController {
     /** Lấy danh sách tất cả báo cáo */
     @GetMapping("/reports")
     public ResponseEntity<?> getAllReports() {
-        List<Map<String, Object>> reports = reportRepository.findAllByOrderByCreatedAtDesc().stream()
+        List<Map<String, Object>> reports = reportRepository.findByReportTargetOrderByCreatedAtDesc("SYSTEM").stream()
                 .map(r -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", r.getId());
@@ -845,7 +845,7 @@ public class AdminController {
         long totalPosts = postRepository.count();
         long bannedUsers = userRepository.countByStatus(UserStatus.BANNED);
         long moderators = userRepository.countByRole(Role.MODERATOR);
-        long pendingReports = reportRepository.countByStatus(ReportStatus.PENDING);
+        long pendingReports = reportRepository.countByStatusAndReportTarget(ReportStatus.PENDING, "SYSTEM");
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalUsers", totalUsers);

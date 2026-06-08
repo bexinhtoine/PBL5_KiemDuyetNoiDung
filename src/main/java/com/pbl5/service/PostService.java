@@ -40,6 +40,9 @@ public class PostService {
     private CommunityMemberRepository communityMemberRepository;
 
     @Autowired
+    private com.pbl5.repository.FriendshipRepository friendshipRepository;
+
+    @Autowired
     private com.pbl5.repository.CommunityTagRepository communityTagRepository;
 
     /**
@@ -102,16 +105,22 @@ public class PostService {
             }
         }
 
-        // Đặt trạng thái ban đầu dựa vào cấu hình duyệt của nhóm
-        PostStatus initialStatus = PostStatus.PENDING_REVIEW;
+        // Đặt trạng thái ban đầu:
+        // - Bài đăng cá nhân (không có cộng đồng): ACTIVE ngay lập tức, AI kiểm duyệt trong nền
+        // - Bài đăng cộng đồng: PENDING_REVIEW cho đến khi AI duyệt xong
+        PostStatus initialStatus;
         boolean triggerAiImmediately = true;
 
-        if (post.getCommunity() != null) {
-            if (post.getCommunity().getRequirePostApproval() != null && post.getCommunity().getRequirePostApproval()) {
-                // Kịch bản 1: Nhóm bật chế độ "Phê duyệt trước"
-                initialStatus = PostStatus.PENDING_COMM_ADMIN;
-                triggerAiImmediately = false;
-            }
+        if (post.getCommunity() == null) {
+            // Bài cá nhân: hiển thị ngay, kiểm duyệt nền sẽ cập nhật nếu vi phạm
+            initialStatus = PostStatus.ACTIVE;
+        } else if (post.getCommunity().getRequirePostApproval() != null && post.getCommunity().getRequirePostApproval()) {
+            // Kịch bản 1: Nhóm bật chế độ "Phê duyệt trước"
+            initialStatus = PostStatus.PENDING_COMM_ADMIN;
+            triggerAiImmediately = false;
+        } else {
+            // Kịch bản 2: Nhóm không yêu cầu phê duyệt trước
+            initialStatus = PostStatus.PENDING_REVIEW;
         }
 
         post.setStatus(initialStatus);
@@ -183,6 +192,24 @@ public class PostService {
         if (post.getCommunity() != null) {
             response.setCommunityId(post.getCommunity().getId());
             response.setCommunityName(post.getCommunity().getName());
+            boolean isMember = communityMemberRepository.existsByCommunityIdAndUserIdAndStatus(
+                    post.getCommunity().getId(), user.getId(), com.pbl5.enums.CommunityMemberStatus.ACTIVE);
+            response.setJoinedCommunity(isMember);
+            response.setCommunityPrivate(post.getCommunity().getIsPrivate());
+        }
+        if (user != null && post.getUser() != null) {
+            if (post.getUser().getId().equals(user.getId())) {
+                response.setFriendshipStatus("MINE");
+            } else {
+                java.util.Optional<com.pbl5.model.Friendship> friendshipOpt = friendshipRepository.findByUsers(user, post.getUser());
+                if (friendshipOpt.isPresent()) {
+                    response.setFriendshipStatus(friendshipOpt.get().getStatus().name());
+                } else {
+                    response.setFriendshipStatus("NONE");
+                }
+            }
+        } else {
+            response.setFriendshipStatus("NONE");
         }
         if (post.getTags() != null) {
             response.setTags(post.getTags().stream()

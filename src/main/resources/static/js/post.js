@@ -100,7 +100,7 @@ function renderPostDetail(post) {
         warningBanner.remove();
     }
 
-    if (post.status === 'REJECTED' || post.status === 'AUTO_REJECTED') {
+    if (post.status === 'REJECTED' || post.status === 'AUTO_REJECTED' || post.status === 'REJECTED_BY_AI') {
         const banner = document.createElement('div');
         banner.id = 'post-deleted-warning-banner';
         banner.style.background = '#ffe8e8';
@@ -159,11 +159,30 @@ function renderPostDetail(post) {
     }
 
     let authorHtml = `<a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit; font-weight:600;">${post.authorName}</a>`;
-    if (post.communityName && post.communityId) {
+    
+    let isCommunityPost = !!(post.communityName && post.communityId);
+    const isMine = post.mine || post.isMine;
+    
+    if (!isCommunityPost) {
+        if (post.friendshipStatus === 'NONE' && !isMine) {
+            authorHtml += `
+                <button class="add-friend-btn" onclick="addFriendFromFeed(event, ${post.authorId}, this)" style="margin-left: 8px; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: 12px; border: 1px solid var(--primary-color); background: transparent; color: var(--primary-color); cursor: pointer; transition: all 0.2s; outline: none; display: inline-flex; align-items: center; justify-content: center; height: 20px;">
+                    <i class="fa-solid fa-user-plus" style="margin-right: 3px;"></i>Kết bạn
+                </button>
+            `;
+        }
+    } else {
         authorHtml += `
             <i class="fa-solid fa-caret-right" style="margin: 0 6px; color: var(--text-muted); font-size: 13px;"></i>
             <a href="/html/community.html?id=${post.communityId}" style="text-decoration:none; color:var(--primary-color); font-weight: 600;">${post.communityName}</a>
         `;
+        if (!post.joinedCommunity && !post.communityPrivate) {
+            authorHtml += `
+                <button class="join-comm-btn" onclick="joinCommunityFromFeed(event, ${post.communityId}, this)" style="margin-left: 8px; padding: 2px 8px; font-size: 11px; font-weight: 600; border-radius: 12px; border: 1px solid var(--primary-color); background: transparent; color: var(--primary-color); cursor: pointer; transition: all 0.2s; outline: none; display: inline-flex; align-items: center; justify-content: center; height: 20px;">
+                    <i class="fa-solid fa-plus" style="margin-right: 3px;"></i>Tham gia
+                </button>
+            `;
+        }
     }
     document.getElementById('post-author-name').innerHTML = authorHtml;
     const authorAvatar = post.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=5e6ad2&color=fff`;
@@ -196,20 +215,46 @@ function renderPostDetail(post) {
 
     // Post Options Menu
     const dropdownMenu = document.getElementById('post-dropdown-menu');
-    const isRejected = post.status === 'REJECTED' || post.status === 'AUTO_REJECTED';
-    if (post.mine || post.isMine) {
-        dropdownMenu.innerHTML = isRejected ? `
-            <a href="javascript:void(0)" onclick="openAppealModal(${post.id})"><i class="fa-solid fa-circle-exclamation"></i> Gửi kháng nghị</a>
-            <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
-            <a href="javascript:void(0)" onclick="deletePostDetail(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
-        ` : `
-            <a href="javascript:void(0)" onclick="deletePostDetail(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
-        `;
+    const isRejected = post.status === 'REJECTED' || post.status === 'AUTO_REJECTED' || post.status === 'REJECTED_BY_AI';
+    isCommunityPost = !!post.communityId;
+    const isMine = post.mine || post.isMine;
+
+    let dropdownHtml = '';
+    if (isMine) {
+        if (isRejected) {
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="openAppealModal(${post.id})"><i class="fa-solid fa-circle-exclamation"></i> Gửi kháng nghị</a>
+                <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
+                <a href="javascript:void(0)" onclick="deletePostDetail(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
+            `;
+        } else if (isCommunityPost) {
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="toggleBookmark(${post.id})"><i class="fa-regular fa-bookmark"></i> Lưu bài viết</a>
+                <a href="javascript:void(0)" onclick="hidePost(${post.id})"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết</a>
+                <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
+                <a href="javascript:void(0)" onclick="deletePostDetail(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
+            `;
+        } else {
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="deletePostDetail(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
+            `;
+        }
     } else {
-        dropdownMenu.innerHTML = `
-            <a href="javascript:void(0)" onclick="reportPost(${post.id})"><i class="fa-regular fa-flag"></i> Báo cáo bài viết</a>
-        `;
+        if (isCommunityPost) {
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="toggleBookmark(${post.id})"><i class="fa-regular fa-bookmark"></i> Lưu bài viết</a>
+                <a href="javascript:void(0)" onclick="hidePost(${post.id})"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết này</a>
+                <a href="javascript:void(0)" onclick="reportPostToTarget(${post.id}, 'COMMUNITY')"><i class="fa-regular fa-flag"></i> Báo cáo với chủ nhóm</a>
+                <a href="javascript:void(0)" onclick="reportPostToTarget(${post.id}, 'SYSTEM')"><i class="fa-solid fa-shield-halved"></i> Báo cáo với quản trị riêng</a>
+            `;
+        } else {
+            dropdownHtml = `
+                <a href="javascript:void(0)" onclick="hidePost(${post.id})"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết này</a>
+                <a href="javascript:void(0)" onclick="reportPost(${post.id})"><i class="fa-regular fa-flag"></i> Báo cáo bài viết</a>
+            `;
+        }
     }
+    dropdownMenu.innerHTML = dropdownHtml;
 }
 
 async function toggleLike(postId, token) {
@@ -704,7 +749,7 @@ async function submitReport() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ reason: reason, category: category })
+            body: JSON.stringify({ reason: reason, category: category, reportTarget: typeof activeReportTarget !== 'undefined' ? activeReportTarget : 'SYSTEM' })
         });
 
         if (res.ok) {
@@ -860,4 +905,121 @@ async function submitAppeal(postId) {
         showToast('Lỗi khi gửi kháng nghị.', 'error');
     }
 }
+
+let activeReportTarget = 'SYSTEM';
+
+window.reportPostToTarget = function(postId, target) {
+    activeReportPostId = postId;
+    activeReportCommentId = null;
+    activeReportTarget = target || 'SYSTEM';
+    
+    const titleEl = document.getElementById('report-modal-title');
+    if (titleEl) {
+        if (target === 'COMMUNITY') {
+            titleEl.innerText = "Báo cáo với chủ nhóm";
+        } else {
+            titleEl.innerText = "Báo cáo với quản trị riêng";
+        }
+    }
+    document.getElementById('report-modal').style.display = 'flex';
+    document.getElementById('report-reason').value = '';
+
+    // Bind confirm button
+    const confirmBtn = document.getElementById('confirm-report-btn');
+    if (confirmBtn) {
+        confirmBtn.onclick = () => submitReport();
+    }
+};
+
+window.toggleBookmark = async function(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/posts/${postId}/bookmark`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            showToast(data.message, 'success');
+        }
+    } catch (err) {
+        console.error('Bookmark error:', err);
+    }
+};
+
+window.hidePost = async function(postId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/posts/${postId}/hide`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Đã ẩn bài viết vĩnh viễn.', 'info');
+            setTimeout(() => {
+                window.location.href = '/html/home.html';
+            }, 1500);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+window.joinCommunityFromFeed = async function (event, commId, btn) {
+    if (event) event.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch(`/api/communities/${commId}/join`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Tham gia cộng đồng thành công!', 'success');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 3px;"></i>Đã tham gia';
+                btn.style.borderColor = '#10b981';
+                btn.style.color = '#10b981';
+                btn.disabled = true;
+                btn.onclick = null;
+            }
+        } else {
+            const errText = await res.text();
+            showToast(errText || 'Lỗi khi tham gia cộng đồng.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối mạng.', 'error');
+    }
+};
+
+window.addFriendFromFeed = async function(event, userId, btn) {
+    if (event) event.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch(`/api/friends/request/${userId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Đã gửi lời mời kết bạn!', 'success');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 3px;"></i>Đã gửi';
+                btn.style.borderColor = '#10b981';
+                btn.style.color = '#10b981';
+                btn.disabled = true;
+                btn.onclick = null;
+            }
+        } else {
+            const errText = await res.text();
+            showToast(errText || 'Lỗi khi gửi lời mời kết bạn.', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối mạng.', 'error');
+    }
+};
 

@@ -32,6 +32,10 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     /** Lấy danh sách report PENDING (cho Moderator) */
     List<Report> findByStatusOrderByCreatedAtDesc(ReportStatus status);
 
+    List<Report> findByReportTargetOrderByCreatedAtDesc(String reportTarget);
+
+    long countByStatusAndReportTarget(ReportStatus status, String reportTarget);
+
     /** Đếm tổng report PENDING trên 1 bài (mọi status) */
     @Query("SELECT COUNT(r) FROM Report r WHERE r.post.id = :postId AND r.status = 'PENDING'")
     long countPendingByPostId(@Param("postId") Long postId);
@@ -41,9 +45,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByComment(Comment comment);
 
     /** Lấy danh sách report theo community (qua bài viết) */
-    @Query("SELECT r FROM Report r WHERE r.post.community.id = :communityId ORDER BY r.createdAt DESC")
+    @Query("SELECT r FROM Report r WHERE r.post.community.id = :communityId AND r.reportTarget = 'COMMUNITY' ORDER BY r.createdAt DESC")
     List<Report> findByCommunityId(@Param("communityId") Long communityId);
 
-    @Query("SELECT COUNT(r) FROM Report r WHERE r.post.community.id = :communityId AND r.createdAt >= :date")
+    @Query("SELECT COUNT(r) FROM Report r WHERE r.post.community.id = :communityId AND r.reportTarget = 'COMMUNITY' AND r.createdAt >= :date")
     long countByCommunityIdAndCreatedAtAfter(@Param("communityId") Long communityId, @Param("date") java.time.LocalDateTime date);
 }

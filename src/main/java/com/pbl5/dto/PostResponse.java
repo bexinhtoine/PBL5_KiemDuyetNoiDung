@@ -234,6 +234,9 @@ public class PostResponse {
     }
 
     private java.util.List<String> tags;
+    private Boolean joinedCommunity;
+    private Boolean communityPrivate;
+    private String friendshipStatus;
 
     public java.util.List<String> getTags() {
         return tags;
@@ -241,5 +244,29 @@ public class PostResponse {
 
     public void setTags(java.util.List<String> tags) {
         this.tags = tags;
+    }
+
+    public Boolean getJoinedCommunity() {
+        return joinedCommunity;
+    }
+
+    public void setJoinedCommunity(Boolean joinedCommunity) {
+        this.joinedCommunity = joinedCommunity;
+    }
+
+    public Boolean getCommunityPrivate() {
+        return communityPrivate;
+    }
+
+    public void setCommunityPrivate(Boolean communityPrivate) {
+        this.communityPrivate = communityPrivate;
+    }
+
+    public String getFriendshipStatus() {
+        return friendshipStatus;
+    }
+
+    public void setFriendshipStatus(String friendshipStatus) {
+        this.friendshipStatus = friendshipStatus;
     }
 }

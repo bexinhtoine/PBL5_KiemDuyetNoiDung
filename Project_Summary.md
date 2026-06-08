@@ -206,12 +206,13 @@ Người dùng đăng bài
 | [`PostResponse.java`](src/main/java/com/pbl5/dto/PostResponse.java) | MODIFY | Thêm trường `pinned` vào DTO. |
 | [`CommunityMember.java`](src/main/java/com/pbl5/model/CommunityMember.java) | MODIFY | Thêm cột `banUntil` (LocalDateTime). |
 | [`CommunityResponse.java`](src/main/java/com/pbl5/dto/CommunityResponse.java) | MODIFY | Thêm `membershipRole` để frontend phân quyền OWNER/ADMIN/MEMBER. |
+| [`PostRepository.java`](src/main/java/com/pbl5/repository/PostRepository.java) | MODIFY | Sửa câu truy vấn Bảng tin (`findHomeFeed`, `findHomeFeedPaged`) so khớp trạng thái `ACTIVE` thay vì `ACCEPTED` của thành viên nhóm. |
 
 ### Frontend (HTML/JS)
 
 | File | Loại | Thay đổi |
 |------|------|---------|
-| [`community.html`](src/main/resources/static/html/community.html) | MODIFY | Thêm container ghim bài, tab Quy tắc và Nhật ký, 4 modal mới. |
+| [`community.html`](src/main/resources/static/html/community.html) | MODIFY | Thêm container ghim bài, tab Quy tắc và Nhật ký, 4 modal mới. Cập nhật trạng thái active thanh bên từ Bảng tin sang Cộng đồng. |
 | [`community.js`](src/main/resources/static/js/community.js) | MODIFY | Thêm toàn bộ logic ghim/bỏ ghim, quy tắc CRUD, nhật ký, temporary ban, logic `joinCommunity` với modal đồng ý. |
 | [`home.html`](src/main/resources/static/html/home.html) | MODIFY | Cập nhật thanh nav thêm nút "Cộng đồng". |
 | [`friends.html`](src/main/resources/static/html/friends.html) | MODIFY | Cập nhật thanh nav thêm nút "Cộng đồng". |
@@ -352,6 +353,22 @@ Người dùng đăng bài
 
 ---
 
+#### 6. 👥 Đồng Bộ Bài Viết Nhóm lên Bảng Tin (Home Feed Synchronization)
+
+- **Vấn đề:** Khi người dùng tham gia vào một cộng đồng, các bài viết của cộng đồng đó không xuất hiện trên Bảng tin (`home.html`) do câu truy vấn JPQL trong `PostRepository.java` kiểm tra trạng thái thành viên bằng giá trị `'ACCEPTED'` (không tồn tại trong enum `CommunityMemberStatus`), dẫn đến không khớp được dữ liệu.
+- **Giải pháp:** Cập nhật các câu truy vấn JPQL `findHomeFeed` và `findHomeFeedPaged` trong `PostRepository.java` để so khớp điều kiện `cm.status = 'ACTIVE'` (trạng thái chính xác khi thành viên đã tham gia nhóm).
+- **Kết quả:** Bài viết từ các cộng đồng đã tham gia hiển thị chính xác trên Bảng tin của người dùng.
+
+---
+
+#### 7. 🧭 Khắc Phục Lỗi Highlight Trạng Thái Active trên Left Sidebar của Cộng Đồng
+
+- **Vấn đề:** Khi xem chi tiết một cộng đồng (`community.html`), thanh bên trái (Left Sidebar) lại tô sáng mục **Bảng tin** thay vì mục **Cộng đồng**, gây nhầm lẫn định hướng.
+- **Giải pháp:** Cập nhật thuộc tính `class="menu-item active"` sang mục **Cộng đồng** và chuyển mục **Bảng tin** về `class="menu-item"` bình thường trong tệp `community.html`.
+- **Kết quả:** Trạng thái active trên thanh bên trái hiển thị chính xác và đồng bộ khi xem cộng đồng.
+
+---
+
 ### 🧪 Kết Quả Kiểm Thử (08/06/2026)
 
 | Kiểm thử | Kết quả |
@@ -392,4 +409,120 @@ Người dùng đăng bài
 
 ---
 
+### 📅 Phiên Làm Việc Tiếp Theo (Đồng Bộ & Chuẩn Hóa Trải Nghiệm Feed)
+
+> **Thời gian:** 08/06/2026 (chiều)
+> **Phạm vi:** Trải nghiệm Bảng tin (Home Feed), Trang Cộng đồng (Community Feed), Chi tiết Bài viết (Post Details), Trang Cá nhân (Profile), và Hệ thống Báo cáo phân quyền.
+
+---
+
+### ✅ Những Gì Đã Làm Được
+
+#### 1. 👥 Chuẩn hóa Trải nghiệm Cộng đồng trên Bảng tin & Trang cá nhân
+- **Nút "Tham gia" (Join) trực tiếp từ Feed:**
+  - Đối với các bài viết thuộc về cộng đồng công khai (`communityPrivate = false`), nếu người dùng hiện tại chưa tham gia (`joinedCommunity = false`), hệ thống sẽ hiển thị một nút **"Tham gia"** ngay cạnh tên cộng đồng trên Home Feed, Community Feed, và Profile Feed.
+  - Tích hợp hiệu ứng Optimistic UI giúp cập nhật ngay lập tức giao diện sang trạng thái *"Đã tham gia"* sau khi gọi thành công `POST /api/communities/{id}/join`.
+
+#### 2. 🛡️ Phân quyền & Đồng bộ hóa Menu Tùy Chọn (3 chấm)
+- **Menu Động dựa trên ngữ cảnh và vai trò:**
+  - **Bài viết cá nhân (của chính mình):** Hỗ trợ đổi trạng thái hiển thị (Công khai, Bạn bè, Chỉ mình tôi) và Xóa bài viết.
+  - **Bài viết cá nhân (của người khác):** Hỗ trợ Ẩn bài viết và Báo cáo bài viết (System Report).
+  - **Bài viết cộng đồng (của chính mình):** Hỗ trợ Lưu bài viết (Bookmark), Ẩn bài viết, và Xóa bài viết.
+  - **Bài viết cộng đồng (của người khác):** Hỗ trợ Lưu bài viết (Bookmark), Ẩn bài viết, Báo cáo tới Chủ nhóm (`COMMUNITY` target) và Báo cáo tới Quản trị hệ thống (`SYSTEM` target).
+- **Hành động Kháng nghị (Appeal) & Xóa bài viết bị gỡ:** Tự động ẩn các tùy chọn khác và chỉ hiển thị nút Kháng nghị / Xóa khi bài viết bị gỡ do vi phạm tiêu chuẩn cộng đồng (`REJECTED` / `AUTO_REJECTED`).
+
+#### 3. 📋 Tách biệt luồng báo cáo (Targeted Report)
+- Bổ sung trường `reportTarget` (`COMMUNITY` hoặc `SYSTEM`) vào DTO payload khi gửi yêu cầu báo cáo bài viết hoặc bình luận qua API `/api/posts/{postId}/report`.
+- Tích hợp HTML Modal Báo cáo động vào tất cả các trang (`home.html`, `community.html`, `post.html`, `profile.html`) để cho phép người dùng chọn phân loại đối tượng nhận báo cáo.
+
+---
+
+#### 4. 🤝 Tính năng Kết Bạn Nhanh Từ Feed & Sửa Lỗi Hiển Thị Bài Viết Trên Trang Cá Nhân
+- **Nút "Kết bạn" (Add Friend) trực tiếp trên bài viết:**
+  - Hiển thị nút **"Kết bạn"** (Add Friend) hoặc **"Đang chờ"** (Pending) ngay bên cạnh tên tác giả bài viết trên Home Feed, Community Feed, Post Details, và Profile Feed nếu người dùng hiện tại và tác giả chưa kết bạn.
+  - Sau khi người dùng bấm kết bạn, hệ thống thực hiện gọi API `POST /api/friends/request/{userId}` và cập nhật tức thì trạng thái nút thành *"Đã gửi"*.
+- **Đồng bộ hóa dữ liệu danh sách bài viết:**
+  - Cập nhật hàm `convertToResponses` trong `PostController.java` để đảm bảo luôn điền đầy đủ thông tin `joinedCommunity`, `communityPrivate`, và `friendshipStatus` cho danh sách bài viết trả về qua API (ví dụ `/api/posts/user/{userId}` cho trang cá nhân của người khác), sửa lỗi bài viết public hoặc nút Join/Kết bạn không hoạt động đúng trên trang cá nhân của người khác.
+
+---
+
+### 🗂️ File Đã Chỉnh Sửa
+
+| File | Loại | Thay đổi |
+|------|------|---------|
+| [`PostResponse.java`](src/main/java/com/pbl5/dto/PostResponse.java) | MODIFY | Thêm trường `friendshipStatus` kèm getter/setter để truyền trạng thái quan hệ bạn bè từ backend lên UI. |
+| [`PostService.java`](src/main/java/com/pbl5/service/PostService.java) | MODIFY | Inject `FriendshipRepository` và điền trạng thái `friendshipStatus` trong `convertToResponse`. |
+| [`PostController.java`](src/main/java/com/pbl5/controller/PostController.java) | MODIFY | Điền đầy đủ `joinedCommunity`, `communityPrivate`, và `friendshipStatus` trong cả `convertToResponse` và `convertToResponses` để danh sách bài viết (profile, home) luôn có đủ dữ liệu. |
+| [`home.js`](src/main/resources/static/js/home.js) | MODIFY | Tích hợp nút kết bạn nhanh và nút tham gia cộng đồng cạnh tên tác giả; thêm hàm helper `addFriendFromFeed`. |
+| [`profile.js`](src/main/resources/static/js/profile.js) | MODIFY | Tích hợp nút kết bạn nhanh và sửa điều kiện kiểm tra nhóm để hiển thị nút Join cạnh tên tác giả trên trang cá nhân; thêm helper `addFriendFromFeed`. |
+| [`community.js`](src/main/resources/static/js/community.js) | MODIFY | Thêm nút kết bạn nhanh bên cạnh tên tác giả khi xem bài viết trong nhóm; thêm các hàm helper `addFriendFromFeed` và `joinCommunityFromFeed`. |
+| [`post.js`](src/main/resources/static/js/post.js) | MODIFY | Thêm nút kết bạn nhanh và nút tham gia cộng đồng trên trang chi tiết bài viết; thêm các hàm helper `addFriendFromFeed` và `joinCommunityFromFeed`. |
+
+---
+
+
 *Cập nhật bởi Antigravity AI Coding Assistant — Phiên làm việc 08/06/2026*
+
+---
+
+## 🔧 Phiên Sửa Lỗi 08/06/2026 (Chiều) — Bảng Tin & Bài Viết Cá Nhân
+
+### 🐛 Vấn Đề Được Phát Hiện
+
+#### 1. Bảng tin bị load liên tục, không hiển thị bài viết
+- **Nguyên nhân:** Hàm `fetchPosts` trong `home.js` gọi đệ quy không có điều kiện dừng khi API trả về lỗi hoặc token hết hạn.
+
+#### 2. Bài viết cá nhân không hiển thị trên bảng tin
+- **Nguyên nhân 1 (DB):** Khi đăng bài cá nhân (không thuộc cộng đồng), `PostService.createPost()` lưu trạng thái ban đầu là `PENDING_REVIEW` cho tất cả bài viết. Bài chờ AI kiểm duyệt nên bị ẩn khỏi feed của người dùng khác.
+- **Nguyên nhân 2 (Query):** `findHomeFeedPaged` sử dụng `LEFT JOIN FETCH` kết hợp `Pageable`, gây ra lỗi Hibernate (in-memory pagination) làm mất các bài viết cá nhân PUBLIC khỏi kết quả truy vấn.
+- **Nguyên nhân 3 (Compile):** File `PostController.java` có đoạn code trùng lặp (`Duplicate method toggleLikeComment`) do lỗi của phiên chỉnh sửa trước, khiến server không thể khởi động.
+
+#### 3. Bài viết PUBLIC của người dùng A không hiển thị trên bảng tin của người dùng B
+- **Nguyên nhân:** `findHomeFeedPaged` không trả về bài viết cá nhân PUBLIC từ người dùng khác do vấn đề kết hợp `LEFT JOIN FETCH` + `Pageable` trong Hibernate.
+
+---
+
+### ✅ Giải Pháp Đã Áp Dụng
+
+#### Fix 1: `PostService.java` — Bài cá nhân lưu thẳng là `ACTIVE`
+```java
+// Trước: tất cả bài đều PENDING_REVIEW
+PostStatus initialStatus = PostStatus.PENDING_REVIEW;
+
+// Sau: bài cá nhân → ACTIVE ngay, bài cộng đồng → PENDING_REVIEW
+if (post.getCommunity() == null) {
+    initialStatus = PostStatus.ACTIVE;  // hiển thị ngay
+} else if (requireApproval) {
+    initialStatus = PostStatus.PENDING_COMM_ADMIN;
+} else {
+    initialStatus = PostStatus.PENDING_REVIEW;
+}
+```
+AI vẫn chạy kiểm duyệt nền, cập nhật status nếu phát hiện vi phạm.
+
+#### Fix 2: `PostController.java` — Xóa code trùng lặp gây lỗi compile
+- Xóa đoạn code duplicate `toggleLikeComment` và garbage code tại cuối file.
+- Server khởi động thành công sau fix.
+
+#### Fix 3: `PostController.java` + `PostRepository.java` — Feed hợp nhất từ nhiều nguồn
+Thay vì phụ thuộc vào một JPQL phức tạp, `getAllPosts` giờ hợp nhất từ 4 nguồn:
+1. `findHomeFeedPaged` — bài cộng đồng + admin feed
+2. `findPublicPersonalPostsForFeed` — bài cá nhân PUBLIC từ mọi người **(query mới, riêng biệt)**
+3. `findFriendsPersonalPostsForFeed` — bài cá nhân FRIENDS từ bạn bè **(query mới, riêng biệt)**
+4. `findByUserIdOrderByCreatedAtDesc` — bài của bản thân (kể cả PENDING_REVIEW)
+
+Sau đó deduplicate, sort theo `createdAt DESC`, và phân trang thủ công.
+
+---
+
+### 🗂️ File Đã Chỉnh Sửa (Phiên Chiều 08/06/2026)
+
+| File | Loại | Thay đổi |
+|------|------|---------|
+| [`PostService.java`](src/main/java/com/pbl5/service/PostService.java) | MODIFY | Bài cá nhân (community IS NULL) lưu trực tiếp với status `ACTIVE` thay vì `PENDING_REVIEW`; AI kiểm duyệt vẫn chạy nền. |
+| [`PostController.java`](src/main/java/com/pbl5/controller/PostController.java) | MODIFY | Xóa code trùng lặp `toggleLikeComment` gây lỗi compile; cập nhật `getAllPosts` để hợp nhất feed từ 4 nguồn riêng biệt. |
+| [`PostRepository.java`](src/main/java/com/pbl5/repository/PostRepository.java) | MODIFY | Thêm 2 query mới: `findPublicPersonalPostsForFeed` và `findFriendsPersonalPostsForFeed` — dùng `@EntityGraph` thay `LEFT JOIN FETCH` để tránh lỗi pagination của Hibernate. |
+
+---
+
+*Cập nhật bởi Antigravity AI Coding Assistant — Phiên làm việc 08/06/2026 (Chiều)*

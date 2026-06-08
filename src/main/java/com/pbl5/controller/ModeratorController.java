@@ -419,7 +419,7 @@ public class ModeratorController {
     @GetMapping("/reports")
     public ResponseEntity<?> getAllReports() {
         List<Map<String, Object>> reports = reportRepository
-                .findAllByOrderByCreatedAtDesc().stream()
+                .findByReportTargetOrderByCreatedAtDesc("SYSTEM").stream()
                 .map(r -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", r.getId());
