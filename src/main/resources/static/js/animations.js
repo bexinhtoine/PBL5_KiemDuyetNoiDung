@@ -19,6 +19,7 @@
         initCountUpObserver();
         initDynamicContentObserver();
         initModalObserver();
+        initCustomSelects();
     });
 
     /**
@@ -346,6 +347,124 @@
         }
     }
 
+    function initCustomSelects() {
+        // Close all custom select dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+        });
+
+        // Convert existing select elements
+        document.querySelectorAll('select').forEach(convertSingleSelectToCustom);
+
+        // Watch for dynamically added select elements
+        const selectObserver = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.tagName === 'SELECT') {
+                            convertSingleSelectToCustom(node);
+                        } else {
+                            node.querySelectorAll('select').forEach(convertSingleSelectToCustom);
+                        }
+                    }
+                });
+            });
+        });
+        selectObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function convertSingleSelectToCustom(select) {
+        // Skip hidden/opacity=0 selects, or already converted selects
+        if (select.classList.contains('custom-select-hidden') || 
+            select.style.display === 'none' || 
+            select.style.opacity === '0' ||
+            select.id === 'modal-post-visibility' ||
+            window.getComputedStyle(select).opacity === '0') {
+            return;
+        }
+        
+        select.classList.add('custom-select-hidden');
+        select.style.display = 'none';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'custom-select-wrapper';
+        if (select.style.width) wrapper.style.width = select.style.width;
+        
+        // Copy standard class names but exclude the custom-select-hidden markers
+        if (select.className) {
+            const classes = select.className.split(' ').filter(c => c !== 'custom-select-hidden');
+            if (classes.length > 0) wrapper.classList.add(...classes);
+        }
+
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-select-trigger';
+        
+        const updateTriggerText = () => {
+            const selectedOption = select.options[select.selectedIndex];
+            trigger.textContent = selectedOption ? selectedOption.textContent : 'Chọn...';
+        };
+        updateTriggerText();
+
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'custom-options';
+
+        const rebuildOptions = () => {
+            optionsContainer.innerHTML = '';
+            Array.from(select.options).forEach((opt) => {
+                const optDiv = document.createElement('div');
+                optDiv.className = 'custom-option';
+                optDiv.textContent = opt.textContent;
+                optDiv.setAttribute('data-value', opt.value);
+                if (opt.selected) {
+                    optDiv.classList.add('selected');
+                }
+
+                optDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                    optDiv.classList.add('selected');
+                    
+                    trigger.textContent = opt.textContent;
+                    select.value = opt.value;
+                    
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    wrapper.classList.remove('open');
+                });
+
+                optionsContainer.appendChild(optDiv);
+            });
+        };
+        rebuildOptions();
+
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(optionsContainer);
+        
+        select.parentNode.insertBefore(wrapper, select.nextSibling);
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+        });
+
+        // Sync changes made to select from JS code
+        const selectChangeObserver = new MutationObserver(() => {
+            updateTriggerText();
+            rebuildOptions();
+        });
+        selectChangeObserver.observe(select, { childList: true, characterData: true, subtree: true });
+
+        select.addEventListener('change', () => {
+            updateTriggerText();
+            optionsContainer.querySelectorAll('.custom-option').forEach(o => {
+                o.classList.toggle('selected', o.getAttribute('data-value') === select.value);
+            });
+        });
+    }
+
     // Expose globally
     window.animateHeartBurst = animateHeartBurst;
+    window.convertSingleSelectToCustom = convertSingleSelectToCustom;
 })();

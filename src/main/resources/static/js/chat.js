@@ -100,7 +100,15 @@ async function loadInboxDropdown() {
     const token = localStorage.getItem('token');
     const inboxList = document.getElementById('inbox-list');
     if (!inboxList) return;
-    inboxList.innerHTML = '<div style="padding: 15px; color:#65676B; font-size:14px; text-align:center;">Đang tải...</div>';
+    inboxList.innerHTML = Array(4).fill(0).map(() => `
+        <div style="padding: 12px 16px; display: flex; gap: 12px; align-items: center;">
+            <div class="skeleton-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+                <div class="skeleton-line" style="height: 12px; width: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 6px; border-radius: 4px;"></div>
+                <div class="skeleton-line" style="height: 10px; width: 80%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+            </div>
+        </div>
+    `).join('');
 
     try {
         const [friendsRes, convRes] = await Promise.all([
@@ -197,24 +205,129 @@ async function fetchNotifications() {
     try {
         const token = localStorage.getItem('token');
         if(!token) return;
-        const res = await fetch('/api/notifications', { headers: { 'Authorization': `Bearer ${token}` } });
-        if(res.ok) {
-            const notifications = await res.json();
-            renderNotifications(notifications);
+        
+        // Fetch notifications and community invitations concurrently
+        const [notifRes, inviteRes] = await Promise.all([
+            fetch('/api/notifications', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/communities/invitations', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]).catch(() => [null, null]);
+
+        let notifications = [];
+        let invitations = [];
+
+        if(notifRes && notifRes.ok) {
+            notifications = await notifRes.json();
         }
+        if(inviteRes && inviteRes.ok) {
+            invitations = await inviteRes.json();
+        }
+
+        renderNotificationsAndInvitations(notifications, invitations);
     } catch(e) { console.error(e); }
 }
 
-function renderNotifications(notifications) {
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+window.handleInviteAction = async function(inviteId, action, event) {
+    if (event) event.stopPropagation();
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/invitations/${inviteId}/${action}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json().catch(() => null) || await res.text();
+            const message = typeof data === 'object' ? data.message : data;
+            // Use showPostNotification if it exists, otherwise alert or custom logic
+            if (typeof showPostNotification === 'function') {
+                showPostNotification(message);
+            } else if (typeof showToast === 'function') {
+                showToast(message, "success");
+            } else {
+                alert(message);
+            }
+            fetchNotifications(); // reload dropdown
+            
+            // If on communities page, refresh
+            if (typeof loadCommunityData === 'function') {
+                loadCommunityData();
+            }
+            // If on community details page, reload
+            if (window.location.pathname.includes("community.html")) {
+                location.reload();
+            }
+        } else {
+            const errorText = await res.text();
+            if (typeof showPostNotification === 'function') {
+                showPostNotification(errorText, true);
+            } else if (typeof showToast === 'function') {
+                showToast(errorText, "error");
+            } else {
+                alert(errorText);
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+function renderNotificationsAndInvitations(notifications, invitations) {
     const list = document.getElementById('notification-list');
     if(!list) return;
     list.innerHTML = '';
     
-    if(notifications.length === 0) {
+    if(notifications.length === 0 && invitations.length === 0) {
         list.innerHTML = '<div style="padding:15px;text-align:center;color:#65676B;font-size:14px;">Không có thông báo nào</div>';
         return;
     }
     
+    // 1. Render invitations first (unread)
+    invitations.forEach(invite => {
+        let avatarUrl = invite.communityAvatar;
+        if (!avatarUrl || avatarUrl.trim() === '') {
+            avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(invite.communityName)}&background=5e6ad2&color=fff`;
+        }
+        
+        let dateStr = "";
+        if(invite.createdAt) {
+            const d = new Date(invite.createdAt);
+            dateStr = d.toLocaleString('vi-VN', {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+        }
+        
+        const item = document.createElement('div');
+        item.className = 'notification-item unread';
+        item.style.cssText = "display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: var(--primary-light); cursor: default; transition: background 0.2s;";
+        
+        item.innerHTML = `
+            <div style="display: flex; gap: 12px; align-items: flex-start; width: 100%;">
+                <img src="${avatarUrl}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(invite.communityName)}&background=5e6ad2&color=fff'">
+                <div class="notification-content" style="flex: 1; min-width: 0;">
+                    <div class="notification-msg" style="font-weight: 550; color: var(--text-main); font-size: 13px; line-height: 1.4; white-space: normal;">
+                        <strong style="color: var(--primary-color);">${escapeHtml(invite.senderName)}</strong> đã mời bạn tham gia nhóm <strong>${escapeHtml(invite.communityName)}</strong>
+                    </div>
+                    <div class="notification-time" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${dateStr}</div>
+                </div>
+                <div class="notification-dot" style="align-self: center; margin-left: auto; flex-shrink: 0;"></div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-left: 52px; margin-top: 4px;">
+                <button class="btn btn-primary" onclick="handleInviteAction(${invite.id}, 'accept', event)" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: var(--primary-color); color: white;">Đồng ý</button>
+                <button class="btn btn-secondary" onclick="handleInviteAction(${invite.id}, 'decline', event)" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; color: var(--text-main); background: var(--button-bg);">Từ chối</button>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+    
+    // 2. Render normal notifications
     notifications.forEach(n => {
         let avatarUrl = n.senderAvatar;
         if (!avatarUrl || avatarUrl.trim() === '') {
@@ -231,7 +344,6 @@ function renderNotifications(notifications) {
         item.href = n.link || '#';
         item.className = 'notification-item ' + (n.isRead ? '' : 'unread');
         item.onclick = async (e) => {
-            // mark as read
             if(!n.isRead) {
                 await fetch(`/api/notifications/${n.id}/read`, {
                     method: 'POST',
@@ -383,7 +495,21 @@ function openChatBox(userId, name, avatar) {
     window.chatTargetAvatarUrl = targetAvatar;
 
     const messagesDiv = document.getElementById('chat-messages-container');
-    messagesDiv.innerHTML = '<div style="text-align:center;color:#65676B;font-size:12px;margin-top:10px;">Đang tải...</div>';
+    messagesDiv.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 16px; padding: 16px;">
+            <div style="display: flex; gap: 8px; align-items: flex-end; max-width: 70%;">
+                <div class="skeleton-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; flex-shrink: 0;"></div>
+                <div class="skeleton-line" style="height: 36px; width: 120px; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 18px 18px 18px 4px;"></div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: flex-end; max-width: 70%; align-self: flex-end; justify-content: flex-end;">
+                <div class="skeleton-line" style="height: 50px; width: 180px; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 18px 18px 4px 18px;"></div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: flex-end; max-width: 70%;">
+                <div class="skeleton-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; flex-shrink: 0;"></div>
+                <div class="skeleton-line" style="height: 36px; width: 150px; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 18px 18px 18px 4px;"></div>
+            </div>
+        </div>
+    `;
 
     const unreadBadge = document.getElementById(`unread-badge-${userId}`);
     if(unreadBadge) unreadBadge.style.display = 'none';

@@ -926,13 +926,11 @@ window.renderPostDetailContent = function (post) {
             <span><i class="fa-solid fa-thumbs-up" style="color: #3498db;"></i> ${likeCount}</span>
             <div>
                 <span>${commentCount} bình luận</span>
-                <span style="margin-left: 10px;">0 chia sẻ</span>
             </div>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #3e4042;">
             <button style="flex: 1; background: transparent; border: none; color: #b0b3b8; padding: 8px; border-radius: 4px; font-weight: 600;"><i class="fa-regular fa-thumbs-up"></i> Thích</button>
             <button style="flex: 1; background: transparent; border: none; color: #b0b3b8; padding: 8px; border-radius: 4px; font-weight: 600;"><i class="fa-regular fa-comment"></i> Bình luận</button>
-            <button style="flex: 1; background: transparent; border: none; color: #b0b3b8; padding: 8px; border-radius: 4px; font-weight: 600;"><i class="fa-solid fa-share"></i> Chia sẻ</button>
         </div>
     `;
 

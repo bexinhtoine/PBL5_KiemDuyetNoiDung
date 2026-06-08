@@ -37,6 +37,13 @@
     --rounded-lg: 14px;
     --rounded-xl: 18px;
     --rounded-pill: 9999px;
+
+    /* Surface and color mappings for compatibility */
+    --surface-1: var(--card-bg-solid);
+    --surface-2: var(--button-bg-solid);
+    --surface-3: var(--button-hover-solid);
+    --canvas: var(--bg-color);
+    --on-primary: #ffffff;
 }
 
 html[data-theme="dark"] {
@@ -63,6 +70,12 @@ html[data-theme="dark"] {
     --border-color-solid: #23252a;
     --button-bg-solid: #141516;
     --button-hover-solid: #18191a;
+
+    --surface-1: var(--card-bg-solid);
+    --surface-2: var(--button-bg-solid);
+    --surface-3: var(--button-hover-solid);
+    --canvas: var(--bg-color);
+    --on-primary: #ffffff;
 }
 
 html[data-theme="light"] {
@@ -89,6 +102,12 @@ html[data-theme="light"] {
     --border-color-solid: #ced0d4;
     --button-bg-solid: #e4e6eb;
     --button-hover-solid: #d8dadf;
+
+    --surface-1: var(--card-bg-solid);
+    --surface-2: var(--button-bg-solid);
+    --surface-3: var(--button-hover-solid);
+    --canvas: var(--bg-color);
+    --on-primary: #ffffff;
 }
 
 .comment-bubble {
@@ -713,6 +732,11 @@ html[data-theme="dark"] .card:hover {
     background-color: var(--button-hover);
 }
 
+.post-input option {
+    background-color: var(--card-bg-solid);
+    color: var(--text-main);
+}
+
 /* Modal Overlay */
 .modal-overlay {
     position: fixed;
@@ -933,6 +957,11 @@ html[data-theme="dark"] .card:hover {
 .post-input:hover {
     background: var(--button-hover-solid);
     cursor: pointer;
+}
+
+.post-input option {
+    background-color: var(--card-bg-solid);
+    color: var(--text-main);
 }
 
 .create-post-actions {
@@ -1679,6 +1708,148 @@ html[data-theme="dark"] .search-results-dropdown::-webkit-scrollbar-thumb:hover 
     pointer-events: none;
     z-index: 9999;
     text-shadow: 0 2px 8px rgba(243, 66, 95, 0.3);
+}
+
+/* Micro-interaction & Transition Effects */
+@keyframes commentSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+        background-color: rgba(94, 106, 210, 0.08);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        background-color: transparent;
+    }
+}
+.comment-item-fade-in {
+    animation: commentSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popScale {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}
+.pop-active {
+    animation: popScale 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-block;
+}
+
+/* Button Loading State */
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+.btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: calc(50% - 8px);
+    left: calc(50% - 8px);
+    border: 2.5px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 0.65s linear infinite;
+}
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== CUSTOM DROP-DOWN STYLING FOR SOCIAL SYSTEM ===== */
+.custom-select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    vertical-align: middle;
+}
+
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    background: var(--surface-2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--rounded-md);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--card-shadow);
+}
+
+.custom-select-trigger:hover {
+    border-color: var(--primary-color);
+}
+
+.custom-select-trigger::after {
+    content: '\f0d7';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+    margin-left: 10px;
+}
+
+.custom-select-wrapper.open .custom-select-trigger::after {
+    transform: rotate(180deg);
+}
+
+.custom-options {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--card-bg-solid);
+    border: 1px solid var(--border-color);
+    border-radius: var(--rounded-md);
+    box-shadow: var(--card-shadow);
+    display: none;
+    z-index: 2500;
+    padding: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.custom-select-wrapper.open .custom-options {
+    display: block;
+    animation: slideDownCustom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDownCustom {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-option {
+    padding: 8px 12px;
+    font-size: 13.5px;
+    color: var(--text-main);
+    cursor: pointer;
+    border-radius: var(--rounded-sm);
+    transition: all 0.15s ease;
+}
+
+.custom-option:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.custom-option.selected {
+    background: var(--primary-color);
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] .custom-option.selected {
+    background: #ffffff;
+    color: #000000 !important;
 }
 
 

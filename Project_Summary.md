@@ -147,6 +147,24 @@ Người dùng đăng bài
 
 - **[MODIFY]** `home.html`, `friends.html`, `communities.html`, `bookmarks.html` — Đồng bộ thanh điều hướng trên tất cả các trang, thêm nút **"Cộng đồng"** và **"Group"** nhất quán.
 
+#### 7. 👥 Duyệt Thành Viên & Lời Mời Bạn Bè
+- **Backend:** Thêm thực thể `CommunityInvitation`, API gửi, nhận, đồng ý và từ chối lời mời. Hỗ trợ trường `requireApproval` (Duyệt thành viên thủ công hoặc tự động) áp dụng cho cả nhóm Public và Private.
+- **Frontend:** Nút/Modal mời bạn bè trực tiếp trên trang chính cộng đồng. Tích hợp hiển thị lời mời chờ xử lý kèm nút Chấp nhận/Từ chối ngay trên đầu dropdown thông báo.
+
+#### 8. 🔍 Tìm Kiếm & Lọc Tag & Quản Lý Tag (Tag CRUD)
+- **Backend:** Hỗ trợ tìm kiếm văn bản và lọc theo tag cho Feed bài viết nội bộ nhóm trong `PostRepository`. Tạo thực thể `CommunityTag` để Admin thiết lập các tag chủ đề (tối đa 15 tag).
+- **Frontend:** Tích hợp thanh tìm kiếm kèm các chip tag chọn nhanh ở đầu Feed bài viết. Thêm Tab "Chủ đề / Tag" trong bảng điều khiển Admin và phần chọn tag khi tạo bài viết mới.
+
+#### 9. 📊 Nhật Ký Hoạt Động Phân Trang & Xuất Báo Cáo & Dashboard Thống Kê (Analytics)
+- **Backend:** Phân trang nhật ký hoạt động qua `Pageable`. Phát triển API xuất log dạng CSV (UTF-8 BOM tránh lỗi hiển thị tiếng Việt trên Excel) hoặc JSON. Thêm API tổng hợp số liệu thống kê.
+- **Frontend:** Tab thống kê vẽ biểu đồ xu hướng bài viết và thành viên mới (sử dụng Chart.js). Tab Nhật ký hoạt động hỗ trợ phân trang và nút xuất báo cáo trực quan.
+
+#### 10. 🔔 Thông Báo Real-time WebSocket
+- Hỗ trợ live push các thông báo ghim bài viết (`POST_PINNED`) và lời mời tham gia nhóm (`COMMUNITY_INVITE`) qua WebSocket STOMP.
+
+#### 11. 🦴 Hiệu Ứng Tải Skeleton Loader (Skeleton Bone Animations)
+- Thay thế hoàn toàn các text thông báo và spinner loading mặc định thành các khung xương skeleton nhấp nháy động chất lượng cao cho: bài viết nhóm, bài viết chờ duyệt, báo cáo vi phạm, thành viên quản trị, quy tắc, nhật ký hoạt động, danh sách bạn bè mời và lịch sử tin nhắn chat.
+
 ---
 
 ## 🔄 Chức Năng Đang Thực Hiện / Cần Kiểm Tra Lại
@@ -154,39 +172,20 @@ Người dùng đăng bài
 | # | Chức năng | Ghi chú |
 |---|-----------|---------|
 | 1 | **Hiệu ứng thả tim (Like animation)** | Đã tích hợp GSAP cho hiệu ứng tim. Cần kiểm tra lại trên giao diện thực tế xem animation có mượt không và GSAP có load đúng CDN không. |
-| 2 | **Tìm kiếm & Lọc bài viết nội bộ nhóm** | Chưa triển khai. Chỉ mới đề xuất trong assessment. |
-| 3 | **Thông báo real-time khi có bài ghim mới** | Backend chưa tích hợp WebSocket/SSE để push thông báo. Frontend phải polling thủ công. |
-| 4 | **Phân trang (Pagination) cho Nhật ký hoạt động** | Hiện tại lấy toàn bộ log không phân trang, có thể gây chậm khi nhóm hoạt động lâu dài. |
 
 ---
 
 ## ❌ Chức Năng Chưa Hoàn Thiện / Hướng Mở Rộng
 
-### Ưu tiên cao (Nên làm trong session tiếp theo)
+### Mở rộng dài hạn
 
 | # | Chức năng | Mô tả |
 |---|-----------|-------|
-| 1 | **Tìm kiếm & Lọc bài viết nội bộ nhóm (Chức năng 3)** | Thanh tìm kiếm bài trong nhóm, lọc theo hashtag do Admin cấu hình (`#ThảoLuận`, `#ThôngBáo`, `#TàiLiệu`). Cần thêm index trên cột `content` và `community_id` trong bảng `posts`. |
-| 2 | **Thống kê hoạt động nhóm (Community Analytics)** | Dashboard OWNER/ADMIN: số thành viên mới/tuần, bài viết/ngày, tỷ lệ bị báo cáo. Cần thêm các aggregate query và biểu đồ Chart.js. |
-| 3 | **Chủ đề / Danh mục bài viết (Post Categories/Tags)** | Phân loại bài viết bằng hashtag hoặc category do Admin định nghĩa. Cần thêm bảng `community_tags` và quan hệ M-N với `posts`. |
-
-### Ưu tiên trung bình
-
-| # | Chức năng | Mô tả |
-|---|-----------|-------|
-| 4 | **Thông báo real-time (WebSocket / SSE)** | Push thông báo khi có bài viết được ghim, khi yêu cầu tham gia được duyệt, khi bị chặn. Cần tích hợp Spring WebSocket hoặc Server-Sent Events. |
-| 5 | **Phân trang Nhật ký hoạt động** | Thêm `?page=&size=` vào `GET /api/communities/{id}/logs`. Dùng Spring `Pageable`. |
-| 6 | **Mời thành viên qua link (Invite Link)** | Generate link mời dùng một lần hoặc có thời hạn. Cần bảng `community_invite_links` với `token`, `expiresAt`, `maxUses`. |
-| 7 | **Export nhật ký (CSV/JSON)** | Cho phép OWNER xuất toàn bộ nhật ký quản trị ra file để lưu trữ. |
-
-### Ưu tiên thấp / Mở rộng dài hạn
-
-| # | Chức năng | Mô tả |
-|---|-----------|-------|
-| 8 | **Sự kiện cộng đồng (Community Events)** | Tạo sự kiện, RSVP, nhắc nhở thành viên. Cần bảng `community_events` và tích hợp Calendar UI. |
-| 9 | **Poll / Bình chọn trong nhóm** | Tạo câu hỏi bình chọn, xem kết quả real-time. Cần bảng `community_polls` và `poll_votes`. |
-| 10 | **Kho tài liệu nhóm (File Storage)** | Cho phép upload và chia sẻ file PDF/doc trong nhóm. Cần tích hợp cloud storage (S3/GCS). |
-| 11 | **Phân cấp vai trò tùy chỉnh (Custom Roles)** | Cho phép OWNER tạo các vai trò tùy chỉnh với quyền hạn riêng, thay vì chỉ có OWNER/ADMIN/MEMBER. |
+| 1 | **Mời thành viên qua link (Invite Link)** | Generate link mời dùng một lần hoặc có thời hạn. Cần bảng `community_invite_links` với `token`, `expiresAt`, `maxUses`. |
+| 2 | **Sự kiện cộng đồng (Community Events)** | Tạo sự kiện, RSVP, nhắc nhở thành viên. Cần bảng `community_events` và tích hợp Calendar UI. |
+| 3 | **Poll / Bình chọn trong nhóm** | Tạo câu hỏi bình chọn, xem kết quả real-time. Cần bảng `community_polls` và `poll_votes`. |
+| 4 | **Kho tài liệu nhóm (File Storage)** | Cho phép upload và chia sẻ file PDF/doc trong nhóm. Cần tích hợp cloud storage (S3/GCS). |
+| 5 | **Phân cấp vai trò tùy chỉnh (Custom Roles)** | Cho phép OWNER tạo các vai trò tùy chỉnh với quyền hạn riêng, thay vì chỉ có OWNER/ADMIN/MEMBER. |
 
 ---
 

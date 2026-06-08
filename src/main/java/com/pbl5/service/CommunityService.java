@@ -50,6 +50,12 @@ public class CommunityService {
     @Autowired
     private CommunityActivityLogRepository communityActivityLogRepository;
 
+    @Autowired
+    private com.pbl5.repository.CommunityTagRepository communityTagRepository;
+
+    @Autowired
+    private com.pbl5.repository.CommunityInvitationRepository communityInvitationRepository;
+
     @Transactional
     public void logActivity(Community community, User admin, String action) {
         CommunityActivityLog log = new CommunityActivityLog();
@@ -155,8 +161,8 @@ public class CommunityService {
         member.setUser(user);
         member.setRole(CommunityRole.MEMBER);
 
-        // If private and requires approval, set PENDING. Otherwise ACTIVE.
-        if (community.getIsPrivate() && community.getRequireApproval()) {
+        // If requires manual approval, set PENDING. Otherwise ACTIVE.
+        if (community.getRequireApproval() != null && community.getRequireApproval()) {
             member.setStatus(CommunityMemberStatus.PENDING);
         } else {
             member.setStatus(CommunityMemberStatus.ACTIVE);
@@ -329,6 +335,8 @@ public class CommunityService {
         // 2.5. Xóa quy tắc nhóm và nhật ký hoạt động
         communityRuleRepository.deleteByCommunityId(id);
         communityActivityLogRepository.deleteByCommunityId(id);
+        communityTagRepository.deleteByCommunityId(id);
+        communityInvitationRepository.deleteByCommunityId(id);
 
         // 3. Xóa các thành viên khỏi cộng đồng
         communityMemberRepository.deleteByCommunityId(id);

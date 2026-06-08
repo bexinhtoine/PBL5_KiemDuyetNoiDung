@@ -271,6 +271,11 @@ async function submitModalPost() {
         visibility: visibility
     };
 
+    const tagCheckboxes = document.querySelectorAll('#modal-post-tags-container input[type="checkbox"]:checked');
+    if (tagCheckboxes.length > 0) {
+        postData.tags = Array.from(tagCheckboxes).map(cb => cb.value);
+    }
+
     if (window.postCommunityId) {
         postData.communityId = window.postCommunityId;
     }

@@ -43,4 +43,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     /** Lấy danh sách report theo community (qua bài viết) */
     @Query("SELECT r FROM Report r WHERE r.post.community.id = :communityId ORDER BY r.createdAt DESC")
     List<Report> findByCommunityId(@Param("communityId") Long communityId);
+
+    @Query("SELECT COUNT(r) FROM Report r WHERE r.post.community.id = :communityId AND r.createdAt >= :date")
+    long countByCommunityIdAndCreatedAtAfter(@Param("communityId") Long communityId, @Param("date") java.time.LocalDateTime date);
 }

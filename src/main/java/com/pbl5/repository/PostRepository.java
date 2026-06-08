@@ -30,11 +30,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
        List<Post> findByCommunityIdAndStatusOrderByCreatedAtDesc(Long communityId, com.pbl5.enums.PostStatus status);
 
+       List<Post> findByCommunityIdAndStatusInOrderByCreatedAtDesc(Long communityId, List<com.pbl5.enums.PostStatus> statuses);
+
        List<Post> findByCommunityIdAndStatusAndPinnedOrderByCreatedAtDesc(Long communityId, com.pbl5.enums.PostStatus status, boolean pinned);
 
        List<Post> findByCommunityIdOrderByCreatedAtDesc(Long communityId);
 
-       @Query("SELECT p FROM Post p WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.user.id = :currentUserId) " +
+       @Query("SELECT p FROM Post p WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW' OR p.user.id = :currentUserId) " +
                      "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) " +
                      "AND (" +
                      "  p.user.id = :currentUserId " +
@@ -66,7 +68,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
               "  :isAdminOrMod = true " +
               "  OR p.user.id = :currentUserId " +
               "  OR (" +
-              "    (p.status = 'ACTIVE' OR p.status = 'PUBLISHED') AND (" +
+              "    (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW') AND (" +
               "      (p.community IS NULL AND (" +
               "        p.visibility = 'PUBLIC' " +
               "        OR (p.visibility = 'FRIENDS' AND EXISTS (" +
@@ -91,12 +93,28 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                @Param("isAdminOrMod") boolean isAdminOrMod,
                Pageable pageable);
 
-       @Query("SELECT DISTINCT p FROM Post p LEFT JOIN FETCH p.user LEFT JOIN FETCH p.processingModerator WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED') AND " +
+       @Query("SELECT DISTINCT p FROM Post p LEFT JOIN FETCH p.user LEFT JOIN FETCH p.processingModerator WHERE (p.status = 'ACTIVE' OR p.status = 'PUBLISHED' OR p.status = 'PENDING_REVIEW') AND " +
                      "(LOWER(p.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                      " LOWER(p.user.fullName) LIKE LOWER(CONCAT('%', :query, '%'))) " +
                      "ORDER BY p.createdAt DESC")
        List<Post> searchPosts(@Param("query") String query);
 
+       @Query("SELECT DISTINCT p FROM Post p " +
+              "LEFT JOIN FETCH p.user " +
+              "LEFT JOIN FETCH p.processingModerator " +
+              "LEFT JOIN p.tags t " +
+              "WHERE p.community.id = :communityId " +
+              "AND (p.status = 'ACTIVE' OR p.status = 'PENDING_REVIEW') " +
+              "AND (:search IS NULL OR :search = '' OR LOWER(p.content) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.user.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+              "AND (:tag IS NULL OR :tag = '' OR LOWER(t.name) = LOWER(:tag)) " +
+              "ORDER BY p.createdAt DESC")
+       List<Post> searchCommunityPosts(
+               @Param("communityId") Long communityId,
+               @Param("search") String search,
+               @Param("tag") String tag);
+
        @Query("SELECT p FROM Post p WHERE (p.status = 'REJECTED' OR p.status = 'AUTO_REJECTED') AND p.reviewedAt < :boundary")
        List<Post> findPostsForCleanup(@Param("boundary") java.time.LocalDateTime boundary);
+
+       List<Post> findByCommunityIdAndStatusAndCreatedAtAfterOrderByCreatedAtAsc(Long communityId, com.pbl5.enums.PostStatus status, java.time.LocalDateTime date);
 }

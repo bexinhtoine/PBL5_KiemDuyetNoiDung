@@ -9,6 +9,11 @@ import com.pbl5.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pbl5.enums.FriendshipStatus;
+import com.pbl5.enums.CommunityMemberStatus;
+import com.pbl5.model.Community;
+import com.pbl5.model.CommunityMember;
+import com.pbl5.repository.CommunityMemberRepository;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +29,9 @@ public class UserService {
 
     @Autowired
     private FriendshipRepository friendshipRepository;
+
+    @Autowired
+    private CommunityMemberRepository communityMemberRepository;
 
     public Map<String, Object> getUserProfile(String email) {
         Optional<User> userOpt = userRepository.findByEmail(email);
@@ -60,6 +68,8 @@ public class UserService {
             profile.put("relationshipStatus", user.getRelationshipStatus());
             profile.put("avatar", user.getAvatar() != null ? user.getAvatar() : "");
             profile.put("cover", user.getCover() != null ? user.getCover() : "");
+            profile.put("mutualFriends", new ArrayList<>());
+            profile.put("commonCommunities", new ArrayList<>());
 
             if (currentUserEmail != null && !currentUserEmail.equals(user.getEmail())) {
                 Optional<User> currentUserOpt = userRepository.findByEmail(currentUserEmail);
@@ -82,6 +92,49 @@ public class UserService {
                     } else {
                         profile.put("friendshipStatus", "NONE");
                     }
+
+                    // 1. Calculate Mutual Friends
+                    List<Friendship> myFriendships = friendshipRepository.findAllFriends(currentUser, FriendshipStatus.ACCEPTED);
+                    List<Friendship> targetFriendships = friendshipRepository.findAllFriends(user, FriendshipStatus.ACCEPTED);
+
+                    List<User> myFriends = new ArrayList<>();
+                    for (Friendship fr : myFriendships) {
+                        if (fr.getRequester().getId().equals(currentUser.getId())) {
+                            myFriends.add(fr.getReceiver());
+                        } else {
+                            myFriends.add(fr.getRequester());
+                        }
+                    }
+
+                    List<Map<String, Object>> mutualFriends = new ArrayList<>();
+                    for (Friendship fr : targetFriendships) {
+                        User friend = fr.getRequester().getId().equals(user.getId()) ? fr.getReceiver() : fr.getRequester();
+                        if (myFriends.stream().anyMatch(fUser -> fUser.getId().equals(friend.getId()))) {
+                            Map<String, Object> friendMap = new HashMap<>();
+                            friendMap.put("id", friend.getId());
+                            friendMap.put("fullName", friend.getFullName());
+                            friendMap.put("avatar", friend.getAvatar() != null ? friend.getAvatar() : "");
+                            mutualFriends.add(friendMap);
+                        }
+                    }
+                    profile.put("mutualFriends", mutualFriends);
+
+                    // 2. Calculate Common Communities
+                    List<CommunityMember> myMemberships = communityMemberRepository.findByUserIdAndStatus(currentUser.getId(), CommunityMemberStatus.ACTIVE);
+                    List<CommunityMember> targetMemberships = communityMemberRepository.findByUserIdAndStatus(user.getId(), CommunityMemberStatus.ACTIVE);
+
+                    List<Map<String, Object>> commonCommunities = new ArrayList<>();
+                    for (CommunityMember targetMem : targetMemberships) {
+                        if (myMemberships.stream().anyMatch(myMem -> myMem.getCommunity().getId().equals(targetMem.getCommunity().getId()))) {
+                            Community comm = targetMem.getCommunity();
+                            Map<String, Object> commMap = new HashMap<>();
+                            commMap.put("id", comm.getId());
+                            commMap.put("name", comm.getName());
+                            commMap.put("avatarUrl", comm.getAvatarUrl() != null ? comm.getAvatarUrl() : "");
+                            commonCommunities.add(commMap);
+                        }
+                    }
+                    profile.put("commonCommunities", commonCommunities);
                 }
             }
             return profile;

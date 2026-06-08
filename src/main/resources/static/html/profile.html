@@ -179,6 +179,14 @@
                             <li><i class="fa-solid fa-cake-candles"></i> Sinh ngày: <span id="profile-dob">---</span></li>
                             <li><i class="fa-solid fa-mars-and-venus"></i> Giới tính: <span id="profile-gender">---</span></li>
                         </ul>
+
+                        <!-- Điểm chung (Bạn chung, cộng đồng chung) -->
+                        <div id="mutual-connections-section" style="margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 15px; display: none;">
+                            <h4 style="font-size: 13.5px; font-weight: 600; margin-bottom: 10px; color: var(--text-main); display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-handshake" style="color: var(--primary-color);"></i> Điểm chung</h4>
+                            <ul class="intro-list" id="mutual-connections-list" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Điểm chung sẽ được cập nhật động qua JS -->
+                            </ul>
+                        </div>
                     </div>
 
                     <div class="card photos-card">

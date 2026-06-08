@@ -39,6 +39,9 @@ public class PostService {
     @Autowired
     private CommunityMemberRepository communityMemberRepository;
 
+    @Autowired
+    private com.pbl5.repository.CommunityTagRepository communityTagRepository;
+
     /**
      * Tạo bài đăng mới với kiểm tra nội dung
      * 
@@ -92,6 +95,11 @@ public class PostService {
             
             post.setCommunity(community);
             post.setVisibility(community.getIsPrivate() ? PostVisibility.PRIVATE : PostVisibility.PUBLIC);
+            
+            if (request.getTags() != null && !request.getTags().isEmpty()) {
+                List<com.pbl5.model.CommunityTag> communityTags = communityTagRepository.findByCommunityIdAndNameIn(community.getId(), request.getTags());
+                post.setTags(communityTags);
+            }
         }
 
         // Đặt trạng thái ban đầu dựa vào cấu hình duyệt của nhóm
@@ -175,6 +183,11 @@ public class PostService {
         if (post.getCommunity() != null) {
             response.setCommunityId(post.getCommunity().getId());
             response.setCommunityName(post.getCommunity().getName());
+        }
+        if (post.getTags() != null) {
+            response.setTags(post.getTags().stream()
+                .map(com.pbl5.model.CommunityTag::getName)
+                .collect(Collectors.toList()));
         }
         return response;
     }

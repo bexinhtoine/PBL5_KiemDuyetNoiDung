@@ -17,6 +17,8 @@
     <!-- WebSocket libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <!-- Chart.js for community analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/js/auth-interceptor.js"></script>
     <style>
         /* Modern Community Banner Header Styles */
@@ -118,6 +120,140 @@
                 margin-top: 10px;
                 padding-bottom: 0;
             }
+        }
+
+        /* Premium Sidebar Dashboard for Community Management */
+        .manage-layout {
+            display: flex;
+            min-height: 500px;
+        }
+
+        .manage-sidebar {
+            width: 260px;
+            border-right: 1px solid var(--border-color);
+            background: var(--card-bg-solid);
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .manage-content-pane {
+            flex: 1;
+            padding: 25px 30px;
+            background: var(--card-bg);
+            overflow-y: auto;
+        }
+
+        .manage-tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 14px;
+            transition: all 0.2s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 8px;
+            width: 100%;
+            border-left: 3px solid transparent;
+        }
+
+        .manage-tab-btn:hover {
+            background: var(--button-hover);
+            color: var(--text-main);
+        }
+
+        .manage-tab-btn.active {
+            background: rgba(94, 106, 210, 0.08) !important;
+            color: var(--primary-color) !important;
+            border-left: 3px solid var(--primary-color) !important;
+            border-radius: 0 8px 8px 0 !important;
+            border-bottom: none !important;
+        }
+        
+        html[data-theme="dark"] .manage-tab-btn.active {
+            background: rgba(94, 106, 210, 0.15) !important;
+        }
+
+        .manage-tab-btn i {
+            width: 20px;
+            font-size: 16px;
+            text-align: center;
+            color: inherit;
+        }
+
+        .tab-badge {
+            background: var(--button-bg-solid);
+            color: var(--text-muted);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: auto;
+            transition: all 0.2s ease;
+        }
+
+        .manage-tab-btn.active .tab-badge {
+            background: var(--primary-color) !important;
+            color: white !important;
+        }
+
+        @media (max-width: 768px) {
+            .manage-layout {
+                flex-direction: column;
+            }
+            .manage-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+                gap: 8px;
+                white-space: nowrap;
+            }
+            .manage-tab-btn {
+                width: auto;
+                padding: 8px 16px;
+                border-left: none !important;
+                border-bottom: 3px solid transparent !important;
+                border-radius: 8px;
+                flex-shrink: 0;
+            }
+            .manage-tab-btn.active {
+                border-left: none !important;
+                border-bottom: 3px solid var(--primary-color) !important;
+                border-radius: 8px 8px 0 0 !important;
+            }
+            .tab-badge {
+                margin-left: 6px;
+            }
+        }
+
+        /* Layout modifications when in Management Mode */
+        .main-layout.manage-mode-active {
+            grid-template-columns: 1fr;
+            max-width: 1320px;
+        }
+        .main-layout.manage-mode-active .left-sidebar,
+        .main-layout.manage-mode-active .right-sidebar {
+            display: none !important;
+        }
+        .main-layout.manage-mode-active .feed-section {
+            max-width: 100%;
+        }
+        .main-layout.manage-mode-active #community-header-card,
+        .main-layout.manage-mode-active #pinned-posts-container,
+        .main-layout.manage-mode-active #community-search-filter-card,
+        .main-layout.manage-mode-active #community-create-post-box,
+        .main-layout.manage-mode-active #posts-container {
+            display: none !important;
         }
     </style>
 </head>
@@ -291,7 +427,7 @@
         <!-- Center Content (Community Feed) -->
         <section class="feed-section">
             <!-- Community Banner Header -->
-            <div class="card profile-header-card" style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; position: relative; padding: 0;">
+            <div id="community-header-card" class="card profile-header-card" style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; position: relative; padding: 0;">
                 <div class="cover-photo" style="height: 250px; background: var(--bg-main); width: 100%;">
                     <img src="" id="community-cover" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
@@ -347,6 +483,21 @@
                 </div>
             </div>
 
+            <!-- Search and Tag Filtering Container -->
+            <div id="community-search-filter-card" class="card" style="display: none; padding: 15px 20px; margin-bottom: 20px; border-radius: 12px; background: var(--card-bg); flex-direction: column; gap: 12px; border: 1px solid var(--border-color);">
+                <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; color: var(--text-muted);"></i>
+                    <input type="text" id="community-post-search-input" placeholder="Tìm kiếm bài viết theo nội dung hoặc người đăng..." style="width: 100%; padding: 12px 12px 12px 42px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); outline: none; font-size: 14px; box-sizing: border-box;" onkeypress="handleCommunityPostSearch(event)">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Chủ đề phổ biến</div>
+                    <div id="community-tag-chips-container" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                        <!-- Chips loaded dynamically -->
+                        <span class="tag-chip active" onclick="filterByTag('')" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 550; background: var(--primary-color); color: white; transition: all 0.2s ease; border: 1px solid var(--primary-color);">Tất cả</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Posts Container -->
             <div class="posts-container" id="posts-container">
                 <div id="private-community-warning" style="display: none; text-align: center; padding: 50px 20px; color: var(--text-muted);">
@@ -386,30 +537,56 @@
                         </button>
                     </div>
 
-                    <!-- Tabs -->
-                    <div style="display: flex; border-bottom: 2px solid var(--border-color); padding: 0 25px; flex-wrap: wrap;">
-                        <button id="manage-tab-pending" class="manage-tab-btn active" onclick="switchManageTab('pending')" style="background: none; border: none; border-bottom: 3px solid var(--primary-color); padding: 14px 15px; font-weight: 600; cursor: pointer; color: var(--primary-color); font-size: 14px; transition: all 0.2s;">
-                            <i class="fa-solid fa-clock"></i> Yêu cầu tham gia (<span id="count-pending">0</span>)
-                        </button>
-                        <button id="manage-tab-active" class="manage-tab-btn" onclick="switchManageTab('active')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 14px 15px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-size: 14px; transition: all 0.2s;">
-                            <i class="fa-solid fa-users"></i> Thành viên (<span id="count-active">0</span>)
-                        </button>
-                        <button id="manage-tab-posts" class="manage-tab-btn" onclick="switchManageTab('posts')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 14px 15px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-size: 14px; transition: all 0.2s;">
-                            <i class="fa-solid fa-file-circle-exclamation"></i> Duyệt bài viết (<span id="count-pending-posts">0</span>)
-                        </button>
-                        <button id="manage-tab-reports" class="manage-tab-btn" onclick="switchManageTab('reports')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 14px 15px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-size: 14px; transition: all 0.2s;">
-                            <i class="fa-solid fa-flag"></i> Báo cáo (<span id="count-reports">0</span>)
-                        </button>
-                        <button id="manage-tab-blocked" class="manage-tab-btn" onclick="switchManageTab('blocked')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 14px 15px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-size: 14px; transition: all 0.2s;">
-                            <i class="fa-solid fa-ban"></i> Đã chặn (<span id="count-blocked">0</span>)
-                        </button>
-                        <button id="manage-tab-rules" class="manage-tab-btn" onclick="switchManageTab('rules')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 14px 15px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-size: 14px; transition: all 0.2s;">
-                            <i class="fa-solid fa-gavel"></i> Quy tắc nhóm (<span id="count-rules">0</span>)
-                        </button>
-                        <button id="manage-tab-logs" class="manage-tab-btn" onclick="switchManageTab('logs')" style="background: none; border: none; border-bottom: 3px solid transparent; padding: 14px 15px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-size: 14px; transition: all 0.2s;">
-                            <i class="fa-solid fa-list-check"></i> Nhật ký hoạt động
-                        </button>
-                    </div>
+                    <div class="manage-layout">
+                        <!-- Sidebar Navigation -->
+                        <div class="manage-sidebar">
+                            <button id="manage-tab-pending" class="manage-tab-btn active" onclick="switchManageTab('pending')">
+                                <i class="fa-solid fa-clock"></i>
+                                <span>Yêu cầu duyệt</span>
+                                <span class="tab-badge" id="count-pending">0</span>
+                            </button>
+                            <button id="manage-tab-active" class="manage-tab-btn" onclick="switchManageTab('active')">
+                                <i class="fa-solid fa-users"></i>
+                                <span>Thành viên</span>
+                                <span class="tab-badge" id="count-active">0</span>
+                            </button>
+                            <button id="manage-tab-posts" class="manage-tab-btn" onclick="switchManageTab('posts')">
+                                <i class="fa-solid fa-file-circle-exclamation"></i>
+                                <span>Duyệt bài viết</span>
+                                <span class="tab-badge" id="count-pending-posts">0</span>
+                            </button>
+                            <button id="manage-tab-reports" class="manage-tab-btn" onclick="switchManageTab('reports')">
+                                <i class="fa-solid fa-flag"></i>
+                                <span>Báo cáo</span>
+                                <span class="tab-badge" id="count-reports">0</span>
+                            </button>
+                            <button id="manage-tab-blocked" class="manage-tab-btn" onclick="switchManageTab('blocked')">
+                                <i class="fa-solid fa-ban"></i>
+                                <span>Đã chặn</span>
+                                <span class="tab-badge" id="count-blocked">0</span>
+                            </button>
+                            <button id="manage-tab-rules" class="manage-tab-btn" onclick="switchManageTab('rules')">
+                                <i class="fa-solid fa-gavel"></i>
+                                <span>Quy tắc nhóm</span>
+                                <span class="tab-badge" id="count-rules">0</span>
+                            </button>
+                            <button id="manage-tab-tags" class="manage-tab-btn" onclick="switchManageTab('tags')">
+                                <i class="fa-solid fa-tags"></i>
+                                <span>Chủ đề / Tag</span>
+                                <span class="tab-badge" id="count-tags">0</span>
+                            </button>
+                            <button id="manage-tab-logs" class="manage-tab-btn" onclick="switchManageTab('logs')">
+                                <i class="fa-solid fa-list-check"></i>
+                                <span>Nhật ký hoạt động</span>
+                            </button>
+                            <button id="manage-tab-analytics" class="manage-tab-btn" onclick="switchManageTab('analytics')">
+                                <i class="fa-solid fa-chart-line"></i>
+                                <span>Thống kê</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Content Pane -->
+                        <div class="manage-content-pane">
 
                     <!-- Pending List -->
                     <div id="manage-list-pending" class="manage-section" style="padding: 20px 25px; min-height: 200px;">
@@ -454,11 +631,78 @@
 
                     <!-- Logs List -->
                     <div id="manage-list-logs" class="manage-section" style="display: none; padding: 20px 25px; min-height: 200px;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 700; color: var(--text-main);">Lịch sử hoạt động của quản trị viên</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main);">Lịch sử hoạt động của quản trị viên</h3>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary" onclick="exportCommunityLogs('csv')" style="border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-file-csv" style="color: #10b981;"></i> Xuất CSV
+                                </button>
+                                <button class="btn btn-secondary" onclick="exportCommunityLogs('json')" style="border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-file-code" style="color: #3b82f6;"></i> Xuất JSON
+                                </button>
+                            </div>
+                        </div>
                         <div id="logs-list-container">
                             <div style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>
                         </div>
+                        <!-- Pagination Controls -->
+                        <div id="logs-pagination" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                            <button id="btn-logs-prev" class="btn btn-secondary" onclick="changeLogsPage(-1)" style="padding: 6px 12px; border-radius: 6px; font-size: 13px;" disabled><i class="fa-solid fa-chevron-left"></i> Trước</button>
+                            <span id="logs-page-info" style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Trang 1</span>
+                            <button id="btn-logs-next" class="btn btn-secondary" onclick="changeLogsPage(1)" style="padding: 6px 12px; border-radius: 6px; font-size: 13px;" disabled>Sau <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
                     </div>
+
+                    <!-- Tags List Section -->
+                    <div id="manage-list-tags" class="manage-section" style="display: none; padding: 20px 25px; min-height: 200px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main);">Chủ đề / Tag bài viết</h3>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="new-tag-name-input" placeholder="Tên tag (ví dụ: ThảoLuận)" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); outline: none; font-size: 14px;">
+                                <button id="btn-add-tag" class="btn btn-primary" onclick="createCommunityTag()" style="border-radius: 8px; padding: 8px 16px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-plus"></i> Thêm Tag
+                                </button>
+                            </div>
+                        </div>
+                        <div id="tags-list-container" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <div style="text-align: center; padding: 30px; width: 100%;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Section -->
+                    <div id="manage-list-analytics" class="manage-section" style="display: none; padding: 20px 25px; min-height: 200px;">
+                        <h3 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 700; color: var(--text-main);">Thống kê cộng đồng (7 ngày qua)</h3>
+                        
+                        <!-- Cards -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                            <div class="card" style="padding: 15px 20px; border-top: 4px solid var(--primary-color); background: var(--bg-main); text-align: center;">
+                                <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">THÀNH VIÊN MỚI</div>
+                                <div id="stat-new-members" style="font-size: 28px; font-weight: 700; color: var(--text-main); margin-top: 5px;">0</div>
+                            </div>
+                            <div class="card" style="padding: 15px 20px; border-top: 4px solid #10b981; background: var(--bg-main); text-align: center;">
+                                <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">BÀI VIẾT MỚI</div>
+                                <div id="stat-new-posts" style="font-size: 28px; font-weight: 700; color: var(--text-main); margin-top: 5px;">0</div>
+                            </div>
+                            <div class="card" style="padding: 15px 20px; border-top: 4px solid #ef4444; background: var(--bg-main); text-align: center;">
+                                <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">SỐ BÁO CÁO MỚI</div>
+                                <div id="stat-new-reports" style="font-size: 28px; font-weight: 700; color: var(--text-main); margin-top: 5px;">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Charts container -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex-wrap: wrap;">
+                            <div class="card" style="padding: 20px; background: var(--bg-main); border: 1px solid var(--border-color);">
+                                <h4 style="margin: 0 0 15px 0; font-size: 14px; font-weight: 600; color: var(--text-main); text-align: center;">Xu hướng bài đăng hàng ngày</h4>
+                                <canvas id="posts-trend-chart" style="max-height: 250px; width: 100%;"></canvas>
+                            </div>
+                            <div class="card" style="padding: 20px; background: var(--bg-main); border: 1px solid var(--border-color);">
+                                <h4 style="margin: 0 0 15px 0; font-size: 14px; font-weight: 600; color: var(--text-main); text-align: center;">Số lượng thành viên mới hàng ngày</h4>
+                                <canvas id="members-trend-chart" style="max-height: 250px; width: 100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- Close .manage-content-pane -->
+            </div> <!-- Close .manage-layout -->
                 </div>
             </div>
 
@@ -513,6 +757,13 @@
                         <img id="modal-image-preview" src="" style="width: 100%; border-radius: 8px; max-height: 300px; object-fit: contain; background: #000;">
                         <video id="modal-video-preview" controls style="width: 100%; border-radius: 8px; max-height: 300px; display: none; background: #000;"></video>
                         <button onclick="removeModalMedia()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div id="modal-post-tags-section" style="display: none; margin: 12px 0; padding: 12px 0; border-top: 1px solid var(--border-color);">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Chọn Tag cho bài viết:</div>
+                        <div id="modal-post-tags-container" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <!-- Tag options will load dynamically -->
+                        </div>
                     </div>
 
                     <div class="modal-add-to-post">
@@ -606,6 +857,14 @@
                         <select id="edit-community-privacy" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); border-radius: 8px; outline: none; box-sizing: border-box; font-family: inherit; cursor: pointer;">
                             <option value="PUBLIC">Công khai (Bất kỳ ai cũng có thể tìm kiếm, tham gia và xem nội dung)</option>
                             <option value="PRIVATE">Riêng tư (Chỉ thành viên mới xem được nội dung, cần phê duyệt tham gia)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Phê duyệt thành viên</label>
+                        <select id="edit-community-member-approval" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); border-radius: 8px; outline: none; box-sizing: border-box; font-family: inherit; cursor: pointer;">
+                            <option value="AUTO">Tự động duyệt (Người dùng tham gia nhóm ngay lập tức)</option>
+                            <option value="MANUAL">Phê duyệt thủ công (Người dùng cần được admin duyệt để tham gia)</option>
                         </select>
                     </div>
 
@@ -770,6 +1029,25 @@
             <div class="modal-footer" style="padding: 15px 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; background: var(--bg-main);">
                 <button class="btn btn-secondary" onclick="closeDisbandCommunityModal()" style="border-radius: 8px; padding: 10px 20px; font-weight: 600; cursor: pointer;">Hủy</button>
                 <button class="btn btn-primary" onclick="submitDisbandCommunity()" style="border-radius: 8px; padding: 10px 20px; border: none; font-weight: 600; background: var(--danger-color); color: white; cursor: pointer;">Xác nhận giải tán</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Friends Modal -->
+    <div id="invite-friends-modal" class="modal-overlay" style="display: none; z-index: 3100;">
+        <div class="modal-content" style="max-width: 450px; padding: 0; background: var(--card-bg); color: var(--text-main); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding: 20px 25px;">
+                <h2 style="font-size: 18px; font-weight: 700; margin: 0;">Mời bạn bè tham gia nhóm</h2>
+                <button class="close-modal" onclick="closeInviteFriendsModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="padding: 15px 25px; border-bottom: 1px solid var(--border-color);">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; color: var(--text-muted);"></i>
+                    <input type="text" id="invite-friends-search" placeholder="Tìm kiếm bạn bè..." style="width: 100%; padding: 10px 10px 10px 36px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); outline: none; font-size: 13px; box-sizing: border-box;" oninput="filterFriendsToInvite(this.value)">
+                </div>
+            </div>
+            <div id="invite-friends-list" style="padding: 15px 25px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+                <div style="text-align: center; padding: 20px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách...</div>
             </div>
         </div>
     </div>

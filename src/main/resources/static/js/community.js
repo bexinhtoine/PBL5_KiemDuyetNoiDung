@@ -65,6 +65,9 @@ async function loadCommunityDetails(token, id) {
                 window.postCommunityId = community.id;
                 loadPinnedPosts(token, id);
                 loadCommunityPosts(token, id);
+                if (typeof window.loadCommunityTags === 'function') {
+                    window.loadCommunityTags();
+                }
             } else {
                 document.getElementById('skeleton-posts').style.display = 'none';
                 document.getElementById('private-community-warning').style.display = 'block';
@@ -140,28 +143,29 @@ function renderCommunityHeader(community, isMember, isCreator, isPending) {
         if (isOwner) {
             actionContainer.innerHTML = `
                 <button class="community-btn community-btn-secondary" onclick="showManageSection()"><i class="fa-solid fa-gear"></i> Quản lý</button>
+                <button class="community-btn community-btn-primary" onclick="openInviteFriendsModal()"><i class="fa-solid fa-user-plus"></i> Mời bạn bè</button>
                 <button class="community-btn community-btn-warning" onclick="openEditCommunityModal()"><i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa</button>
                 <button class="community-btn community-btn-danger" onclick="disbandCommunity()"><i class="fa-solid fa-trash-can"></i> Giải tán</button>
             `;
         } else if (isAdmin) {
             actionContainer.innerHTML = `
                 <button class="community-btn community-btn-secondary" onclick="showManageSection()"><i class="fa-solid fa-gear"></i> Quản lý</button>
+                <button class="community-btn community-btn-primary" onclick="openInviteFriendsModal()"><i class="fa-solid fa-user-plus"></i> Mời bạn bè</button>
             `;
         } else {
-            actionContainer.innerHTML = `<button id="btn-community-action" class="community-btn"></button>`;
-            const newBtn = document.getElementById('btn-community-action');
             if (isMember) {
-                newBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Rời nhóm';
-                newBtn.className = 'community-btn community-btn-outline';
-                newBtn.onclick = () => leaveCommunity(community.id);
+                actionContainer.innerHTML = `
+                    <button class="community-btn community-btn-primary" onclick="openInviteFriendsModal()"><i class="fa-solid fa-user-plus"></i> Mời bạn bè</button>
+                    <button id="btn-community-action" class="community-btn community-btn-outline" onclick="leaveCommunity(${community.id})"><i class="fa-solid fa-right-from-bracket"></i> Rời nhóm</button>
+                `;
             } else if (isPending) {
-                newBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Hủy yêu cầu';
-                newBtn.className = 'community-btn community-btn-outline';
-                newBtn.onclick = () => leaveCommunity(community.id, true);
+                actionContainer.innerHTML = `
+                    <button id="btn-community-action" class="community-btn community-btn-outline" onclick="leaveCommunity(${community.id}, true)"><i class="fa-solid fa-xmark"></i> Hủy yêu cầu</button>
+                `;
             } else {
-                newBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Tham gia';
-                newBtn.className = 'community-btn community-btn-primary';
-                newBtn.onclick = () => joinCommunity(community.id);
+                actionContainer.innerHTML = `
+                    <button id="btn-community-action" class="community-btn community-btn-primary" onclick="joinCommunity(${community.id})"><i class="fa-solid fa-right-to-bracket"></i> Tham gia</button>
+                `;
             }
         }
     }
@@ -180,27 +184,27 @@ function renderCommunityHeader(community, isMember, isCreator, isPending) {
 
 window.showManageSection = function() {
     const section = document.getElementById('community-manage-section');
-    const postsContainer = document.getElementById('posts-container');
-    const createPostBox = document.getElementById('community-create-post-box');
+    const layout = document.querySelector('.main-layout');
     if (section) {
+        if (layout) {
+            layout.classList.add('manage-mode-active');
+        }
         section.style.display = 'block';
-        if (postsContainer) postsContainer.style.display = 'none';
-        if (createPostBox) createPostBox.style.display = 'none';
         updateAllManageCounts();
         switchManageTab('pending');
-        // Smooth scroll to section
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Smooth scroll to top of window
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 };
 
 window.hideManageSection = function() {
     const section = document.getElementById('community-manage-section');
-    const postsContainer = document.getElementById('posts-container');
-    const createPostBox = document.getElementById('community-create-post-box');
+    const layout = document.querySelector('.main-layout');
     if (section) {
+        if (layout) {
+            layout.classList.remove('manage-mode-active');
+        }
         section.style.display = 'none';
-        if (postsContainer) postsContainer.style.display = 'block';
-        if (createPostBox) createPostBox.style.display = 'block';
     }
     // Remove tab param from URL
     const url = new URL(window.location);
@@ -209,20 +213,16 @@ window.hideManageSection = function() {
 };
 
 window.switchManageTab = function(tab) {
-    const tabs = ['pending', 'active', 'reports', 'blocked', 'posts', 'rules', 'logs'];
+    const tabs = ['pending', 'active', 'reports', 'blocked', 'posts', 'rules', 'tags', 'logs', 'analytics'];
     tabs.forEach(t => {
         const tabBtn = document.getElementById(`manage-tab-${t}`);
         const section = document.getElementById(`manage-list-${t}`);
         if (tabBtn && section) {
             if (t === tab) {
                 tabBtn.classList.add('active');
-                tabBtn.style.borderBottomColor = 'var(--primary-color)';
-                tabBtn.style.color = 'var(--primary-color)';
                 section.style.display = 'block';
             } else {
                 tabBtn.classList.remove('active');
-                tabBtn.style.borderBottomColor = 'transparent';
-                tabBtn.style.color = 'var(--text-muted)';
                 section.style.display = 'none';
             }
         }
@@ -238,8 +238,13 @@ window.switchManageTab = function(tab) {
         fetchPendingPosts();
     } else if (tab === 'rules') {
         fetchCommunityRulesManage();
+    } else if (tab === 'tags') {
+        window.loadCommunityTags();
     } else if (tab === 'logs') {
+        window.currentLogsPage = 0;
         fetchCommunityLogs();
+    } else if (tab === 'analytics') {
+        loadCommunityAnalytics();
     }
 };
 
@@ -247,7 +252,19 @@ async function fetchCommunityReports() {
     const container = document.getElementById('manage-list-reports');
     if (!container) return;
     
-    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    container.innerHTML = Array(3).fill(0).map(() => `
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1;">
+                <div class="skeleton-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; flex-shrink: 0;"></div>
+                <div style="flex: 1;">
+                    <div class="skeleton-line" style="height: 14px; width: 30%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 8px; border-radius: 4px;"></div>
+                    <div class="skeleton-line" style="height: 12px; width: 60%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 6px; border-radius: 4px;"></div>
+                    <div class="skeleton-line" style="height: 10px; width: 80%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+                </div>
+            </div>
+            <div class="skeleton-line" style="height: 20px; width: 60px; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 12px;"></div>
+        </div>
+    `).join('');
     
     const token = localStorage.getItem('token');
     try {
@@ -327,7 +344,18 @@ async function fetchManageMembers(status) {
     const container = document.getElementById(`manage-list-${status}`);
     if (!container) return;
 
-    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    container.innerHTML = Array(3).fill(0).map(() => `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <div class="skeleton-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; flex-shrink: 0;"></div>
+                <div style="flex: 1;">
+                    <div class="skeleton-line" style="height: 14px; width: 40%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 6px; border-radius: 4px;"></div>
+                    <div class="skeleton-line" style="height: 10px; width: 25%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+                </div>
+            </div>
+            <div class="skeleton-line" style="height: 32px; width: 80px; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 6px;"></div>
+        </div>
+    `).join('');
 
     try {
         const res = await fetch(`/api/communities/${window.currentCommunityId}/members?status=${status.toUpperCase()}`, {
@@ -554,16 +582,41 @@ function leaveCommunity(id, isPending = false) {
     });
 }
 
-async function loadCommunityPosts(token, id) {
+async function loadCommunityPosts(token, id, search = '', tag = '') {
+    const container = document.getElementById('posts-container');
+    if (container) {
+        container.innerHTML = Array(2).fill(0).map(() => `
+            <div class="card skeleton-post" style="padding: 16px; margin-bottom: 16px; border-radius: 8px;">
+                <div class="skeleton-header" style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+                    <div class="skeleton-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out;"></div>
+                    <div class="skeleton-meta" style="flex: 1;">
+                        <div class="skeleton-line" style="height: 12px; width: 30%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 6px; border-radius: 4px;"></div>
+                        <div class="skeleton-line" style="height: 10px; width: 15%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+                    </div>
+                </div>
+                <div class="skeleton-content">
+                    <div class="skeleton-line" style="height: 14px; width: 90%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 8px; border-radius: 4px;"></div>
+                    <div class="skeleton-line" style="height: 14px; width: 75%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+                </div>
+            </div>
+        `).join('');
+    }
     try {
-        const res = await fetch(`/api/communities/${id}/posts`, {
+        let url = `/api/communities/${id}/posts`;
+        const params = [];
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (tag) params.push(`tag=${encodeURIComponent(tag)}`);
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        const res = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
             const posts = await res.json();
             renderPosts(posts, token);
         } else {
-            document.getElementById('posts-container').innerHTML = '<div style="text-align: center; color: #65676B; padding: 20px;">Lỗi tải bài viết.</div>';
+            if (container) container.innerHTML = '<div style="text-align: center; color: #65676B; padding: 20px;">Lỗi tải bài viết.</div>';
         }
     } catch(e) {
         console.error(e);
@@ -646,6 +699,15 @@ function renderPosts(posts, token) {
             `;
         }
 
+        let tagsHtml = '';
+        if (post.tags && post.tags.length > 0) {
+            tagsHtml = `
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; margin-bottom: 8px;">
+                    ${post.tags.map(t => `<span style="font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: var(--primary-light); color: var(--primary-color);">#${escapeHtml(t.name || t)}</span>`).join('')}
+                </div>
+            `;
+        }
+
         let postHtml = `
         <article class="card post" id="post-${post.id}" style="position: relative;">
             <div class="post-header">
@@ -662,6 +724,7 @@ function renderPosts(posts, token) {
             
             <div class="post-content">
                 <p>${escapeHtml(post.content || '')}</p>
+                ${tagsHtml}
             </div>
         `;
 
@@ -682,9 +745,6 @@ function renderPosts(posts, token) {
                 </button>
                 <button class="interaction-btn" onclick="location.href='/html/post.html?id=${post.id}'">
                     <i class="fa-regular fa-comment"></i> Bình luận (${post.commentCount})
-                </button>
-                <button class="interaction-btn" onclick="location.href='/html/post.html?id=${post.id}'">
-                    <i class="fa-regular fa-share-from-square"></i> Chia sẻ
                 </button>
                 <button id="bookmark-btn-${post.id}" class="interaction-btn" onclick="toggleBookmark(${post.id})" style="margin-left: auto; ${post.bookmarkedByCurrentUser ? 'color: var(--primary-color);' : ''}">
                     <i class="${post.bookmarkedByCurrentUser ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i>
@@ -765,6 +825,12 @@ async function toggleBookmark(postId) {
         icon.classList.add('fa-solid');
         btn.style.color = 'var(--primary-color)';
     }
+
+    // Add pop animation effect
+    icon.classList.add('pop-active');
+    icon.addEventListener('animationend', () => {
+        icon.classList.remove('pop-active');
+    }, { once: true });
 
     try {
         const res = await fetch(`/api/posts/${postId}/bookmark`, {
@@ -904,6 +970,7 @@ window.openEditCommunityModal = function() {
     document.getElementById('edit-community-name').value = window.currentCommunity.name || '';
     document.getElementById('edit-community-desc').value = window.currentCommunity.description || '';
     document.getElementById('edit-community-privacy').value = window.currentCommunity.isPrivate ? 'PRIVATE' : 'PUBLIC';
+    document.getElementById('edit-community-member-approval').value = window.currentCommunity.requireApproval ? 'MANUAL' : 'AUTO';
     document.getElementById('edit-community-post-approval').value = window.currentCommunity.requirePostApproval ? 'MANUAL' : 'AUTO';
     
     // Preview image init
@@ -1030,7 +1097,7 @@ window.submitEditCommunity = async function() {
                 name: name,
                 description: desc,
                 isPrivate: privacy === 'PRIVATE',
-                requireApproval: privacy === 'PRIVATE',
+                requireApproval: document.getElementById('edit-community-member-approval').value === 'MANUAL',
                 requirePostApproval: document.getElementById('edit-community-post-approval').value === 'MANUAL',
                 avatarUrl: avatarUrl,
                 coverUrl: coverUrl
@@ -1233,7 +1300,21 @@ async function fetchPendingPosts() {
     const container = document.getElementById('manage-list-posts');
     if (!container) return;
     
-    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    container.innerHTML = Array(2).fill(0).map(() => `
+        <div class="card skeleton-post" style="padding: 16px; margin-bottom: 16px; border-radius: 8px;">
+            <div class="skeleton-header" style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+                <div class="skeleton-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton-meta" style="flex: 1;">
+                    <div class="skeleton-line" style="height: 12px; width: 30%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 6px; border-radius: 4px;"></div>
+                    <div class="skeleton-line" style="height: 10px; width: 15%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+                </div>
+            </div>
+            <div class="skeleton-content">
+                <div class="skeleton-line" style="height: 14px; width: 90%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 8px; border-radius: 4px;"></div>
+                <div class="skeleton-line" style="height: 14px; width: 75%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+            </div>
+        </div>
+    `).join('');
     
     const token = localStorage.getItem('token');
     try {
@@ -1504,7 +1585,15 @@ async function fetchCommunityRulesManage() {
     const container = document.getElementById('rules-list-container');
     if (!container) return;
     
-    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    container.innerHTML = Array(3).fill(0).map(() => `
+        <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+                <div class="skeleton-line" style="height: 14px; width: 30%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 8px; border-radius: 4px;"></div>
+                <div class="skeleton-line" style="height: 11px; width: 60%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton-line" style="height: 32px; width: 60px; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 6px;"></div>
+        </div>
+    `).join('');
     
     const token = localStorage.getItem('token');
     try {
@@ -1637,19 +1726,41 @@ async function submitRulesUpdate() {
     }
 }
 
+window.currentLogsPage = 0;
+window.logsPageSize = 10;
+window.logsTotalPages = 1;
+
 async function fetchCommunityLogs() {
     const container = document.getElementById('logs-list-container');
     if (!container) return;
     
-    container.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>';
+    container.innerHTML = Array(4).fill(0).map(() => `
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1;">
+                <div class="skeleton-line" style="height: 12px; width: 60%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; margin-bottom: 6px; border-radius: 4px;"></div>
+                <div class="skeleton-line" style="height: 10px; width: 30%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+            </div>
+        </div>
+    `).join('');
     
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`/api/communities/${window.currentCommunityId}/logs`, {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/logs?page=${window.currentLogsPage}&size=${window.logsPageSize}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
-            const logs = await res.json();
+            const data = await res.json();
+            const logs = data.content || [];
+            window.logsTotalPages = data.totalPages || 1;
+            
+            // Update page info display
+            const pageInfo = document.getElementById('logs-page-info');
+            const prevBtn = document.getElementById('btn-logs-prev');
+            const nextBtn = document.getElementById('btn-logs-next');
+            if (pageInfo) pageInfo.textContent = `Trang ${window.currentLogsPage + 1} / ${window.logsTotalPages}`;
+            if (prevBtn) prevBtn.disabled = window.currentLogsPage === 0;
+            if (nextBtn) nextBtn.disabled = window.currentLogsPage >= window.logsTotalPages - 1;
+
             if (logs.length === 0) {
                 container.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">
                     <i class="fa-solid fa-clock-rotate-left" style="font-size: 36px; margin-bottom: 10px; display: block; color: var(--text-muted);"></i>
@@ -1677,6 +1788,409 @@ async function fetchCommunityLogs() {
         container.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi kết nối.</div>';
     }
 }
+
+window.changeLogsPage = function(delta) {
+    const newPage = window.currentLogsPage + delta;
+    if (newPage >= 0 && newPage < window.logsTotalPages) {
+        window.currentLogsPage = newPage;
+        fetchCommunityLogs();
+    }
+};
+
+window.exportCommunityLogs = function(format) {
+    const token = localStorage.getItem('token');
+    fetch(`/api/communities/${window.currentCommunityId}/logs/export?format=${format}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(async res => {
+        if (!res.ok) {
+            throw new Error(await res.text() || "Không thể tải báo cáo");
+        }
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nhat_ky_hoat_dong_${window.currentCommunityId}.${format === 'csv' ? 'csv' : 'json'}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        showToast("Tải báo cáo nhật ký thành công!", "success");
+    })
+    .catch(err => {
+        showToast(err.message || "Lỗi tải báo cáo", "error");
+    });
+};
+
+let postsChartInstance = null;
+let membersChartInstance = null;
+
+async function loadCommunityAnalytics() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/analytics`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            
+            // Populate cards
+            document.getElementById('stat-new-members').textContent = data.newMembersThisWeek || 0;
+            document.getElementById('stat-new-posts').textContent = data.newPostsThisWeek || 0;
+            document.getElementById('stat-new-reports').textContent = data.newReportsThisWeek || 0;
+            
+            const dailyTrends = data.dailyTrends || [];
+            const labels = dailyTrends.map(t => {
+                const date = new Date(t.date);
+                return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            });
+            const postsData = dailyTrends.map(t => t.newPosts || 0);
+            const membersData = dailyTrends.map(t => t.newMembers || 0);
+            
+            // Destroy existing charts if any
+            if (postsChartInstance) postsChartInstance.destroy();
+            if (membersChartInstance) membersChartInstance.destroy();
+            
+            // Render posts line chart
+            const ctxPosts = document.getElementById('posts-trend-chart').getContext('2d');
+            postsChartInstance = new Chart(ctxPosts, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Bài đăng mới',
+                        data: postsData,
+                        borderColor: '#5e6ad2',
+                        backgroundColor: 'rgba(94, 106, 210, 0.15)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0 }
+                        }
+                    }
+                }
+            });
+            
+            // Render members bar chart
+            const ctxMembers = document.getElementById('members-trend-chart').getContext('2d');
+            membersChartInstance = new Chart(ctxMembers, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Thành viên mới',
+                        data: membersData,
+                        backgroundColor: '#10b981',
+                        borderRadius: 6,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+    } catch(e) {
+        console.error("Lỗi tải thống kê", e);
+    }
+}
+
+window.communityTags = [];
+window.selectedFilterTag = '';
+
+window.loadCommunityTags = async function() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/tags`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const tags = await res.json();
+            window.communityTags = tags;
+            
+            // 1. Populate search filter chips
+            const filterContainer = document.getElementById('community-tag-chips-container');
+            if (filterContainer) {
+                let activeStyle = window.selectedFilterTag === '' ? 'background: var(--primary-color); color: white; border: 1px solid var(--primary-color);' : 'background: var(--bg-main); color: var(--text-secondary); border: 1px solid var(--border-color);';
+                let html = `<span class="tag-chip ${window.selectedFilterTag === '' ? 'active' : ''}" onclick="filterByTag('')" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 550; ${activeStyle} transition: all 0.2s ease;">Tất cả</span>`;
+                
+                tags.forEach(tag => {
+                    let isAct = window.selectedFilterTag === tag;
+                    let style = isAct ? 'background: var(--primary-color); color: white; border: 1px solid var(--primary-color);' : 'background: var(--bg-main); color: var(--text-secondary); border: 1px solid var(--border-color);';
+                    html += `<span class="tag-chip ${isAct ? 'active' : ''}" onclick="filterByTag('${tag}')" style="cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 550; ${style} transition: all 0.2s ease;">#${escapeHtml(tag)}</span>`;
+                });
+                filterContainer.innerHTML = html;
+            }
+
+            // Show or hide search card
+            const searchCard = document.getElementById('community-search-filter-card');
+            if (searchCard) {
+                if (window.isCurrentCommunityManager || window.currentCommunity.membershipStatus === 'ACTIVE' || !window.currentCommunity.isPrivate) {
+                    searchCard.style.display = 'flex';
+                } else {
+                    searchCard.style.display = 'none';
+                }
+            }
+
+            // 2. Populate create post tag checklist/chips selector
+            const createPostTagsContainer = document.getElementById('modal-post-tags-container');
+            const createPostTagsSection = document.getElementById('modal-post-tags-section');
+            if (createPostTagsContainer && createPostTagsSection) {
+                if (tags.length > 0) {
+                    createPostTagsSection.style.display = 'block';
+                    createPostTagsContainer.innerHTML = tags.map(tag => `
+                        <label style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); font-size: 13px; font-weight: 550; color: var(--text-main); cursor: pointer; transition: all 0.2s;">
+                            <input type="checkbox" value="${escapeHtml(tag)}" style="cursor: pointer;">
+                            #${escapeHtml(tag)}
+                        </label>
+                    `).join('');
+                } else {
+                    createPostTagsSection.style.display = 'none';
+                }
+            }
+
+            // 3. Populate manage tab tags
+            const manageTagsContainer = document.getElementById('tags-list-container');
+            const countTagsEl = document.getElementById('count-tags');
+            if (countTagsEl) countTagsEl.textContent = tags.length;
+            if (manageTagsContainer) {
+                if (tags.length === 0) {
+                    manageTagsContainer.innerHTML = `<div style="text-align: center; padding: 30px; width: 100%; color: var(--text-muted);">
+                        Chưa có tag nào được tạo. Quản trị viên có thể tạo tối đa 15 tag để quản lý chủ đề bài viết.
+                    </div>`;
+                } else {
+                    manageTagsContainer.innerHTML = tags.map(tag => `
+                        <span style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 20px; background: var(--primary-light); color: var(--primary-color); font-weight: 600; font-size: 13px; border: 1px solid rgba(94,106,210,0.15);">
+                            #${escapeHtml(tag)}
+                            <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 14px; margin-left: 2px;" onclick="deleteCommunityTag('${escapeHtml(tag)}')"></i>
+                        </span>
+                    `).join('');
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Lỗi tải tags", e);
+    }
+};
+
+window.handleCommunityPostSearch = function(event) {
+    if (event.key === 'Enter') {
+        const searchVal = event.target.value.trim();
+        const token = localStorage.getItem('token');
+        loadCommunityPosts(token, window.currentCommunityId, searchVal, window.selectedFilterTag);
+    }
+};
+
+window.filterByTag = function(tag) {
+    window.selectedFilterTag = tag;
+    const token = localStorage.getItem('token');
+    const searchVal = document.getElementById('community-post-search-input').value.trim();
+    
+    const chips = document.querySelectorAll('#community-tag-chips-container .tag-chip');
+    chips.forEach(chip => {
+        const isAllChip = chip.textContent === 'Tất cả' && tag === '';
+        const isMatchingTag = chip.textContent === '#' + tag;
+        if (isAllChip || isMatchingTag) {
+            chip.classList.add('active');
+            chip.style.cssText = "cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 550; background: var(--primary-color); color: white; border: 1px solid var(--primary-color); transition: all 0.2s ease;";
+        } else {
+            chip.classList.remove('active');
+            chip.style.cssText = "cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 550; background: var(--bg-main); color: var(--text-secondary); border: 1px solid var(--border-color); transition: all 0.2s ease;";
+        }
+    });
+
+    loadCommunityPosts(token, window.currentCommunityId, searchVal, tag);
+};
+
+window.createCommunityTag = async function() {
+    const input = document.getElementById('new-tag-name-input');
+    const tagName = input.value.trim().replace(/^#/, '');
+    if (!tagName) {
+        showToast("Vui lòng nhập tên tag", "error");
+        return;
+    }
+    
+    if (window.communityTags.includes(tagName)) {
+        showToast("Tag này đã tồn tại", "error");
+        return;
+    }
+    
+    if (window.communityTags.length >= 15) {
+        showToast("Đã đạt giới hạn tối đa 15 tag", "error");
+        return;
+    }
+
+    const updatedTags = [...window.communityTags, tagName];
+    await submitTagsUpdate(updatedTags);
+    input.value = '';
+};
+
+window.deleteCommunityTag = async function(tagName) {
+    showConfirmModal(
+        'Xác nhận xóa Tag',
+        `Bạn có chắc muốn xóa tag #${tagName}? Bài viết chứa tag này sẽ không bị xóa nhưng sẽ không còn gắn tag nữa.`,
+        async () => {
+            const updatedTags = window.communityTags.filter(t => t !== tagName);
+            await submitTagsUpdate(updatedTags);
+        }
+    );
+};
+
+async function submitTagsUpdate(tagsList) {
+    const token = localStorage.getItem('token');
+    const btn = document.getElementById('btn-add-tag');
+    if (btn) btn.disabled = true;
+    
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/tags`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(tagsList)
+        });
+        if (res.ok) {
+            showToast("Đã cập nhật danh sách tag thành công!", "success");
+            await window.loadCommunityTags();
+        } else {
+            showToast(await res.text(), "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+window.allFriendsList = [];
+
+window.openInviteFriendsModal = async function() {
+    document.getElementById('invite-friends-modal').style.display = 'flex';
+    document.getElementById('invite-friends-search').value = '';
+    const listContainer = document.getElementById('invite-friends-list');
+    listContainer.innerHTML = Array(3).fill(0).map(() => `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <div class="skeleton-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; flex-shrink: 0;"></div>
+                <div class="skeleton-line" style="height: 12px; width: 45%; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 4px;"></div>
+            </div>
+            <div class="skeleton-line" style="height: 28px; width: 60px; background: var(--skeleton-bg); animation: skeleton-pulse 1.5s infinite ease-in-out; border-radius: 6px;"></div>
+        </div>
+    `).join('');
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/friends', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const friends = await res.json();
+            const membersRes = await fetch(`/api/communities/${window.currentCommunityId}/members`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            let existingMemberIds = [];
+            if (membersRes.ok) {
+                const members = await membersRes.json();
+                existingMemberIds = members.map(m => m.id || m.userId || (m.user && m.user.id));
+            }
+            
+            window.allFriendsList = friends.filter(f => !existingMemberIds.includes(f.id));
+            renderFriendsToInvite(window.allFriendsList);
+        } else {
+            listContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi tải danh sách bạn bè.</div>';
+        }
+    } catch (e) {
+        console.error(e);
+        listContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Lỗi kết nối.</div>';
+    }
+};
+
+window.closeInviteFriendsModal = function() {
+    document.getElementById('invite-friends-modal').style.display = 'none';
+};
+
+function renderFriendsToInvite(list) {
+    const listContainer = document.getElementById('invite-friends-list');
+    if (list.length === 0) {
+        listContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Không có bạn bè nào để mời.</div>';
+        return;
+    }
+    
+    listContainer.innerHTML = list.map(friend => {
+        const avatarUrl = friend.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName)}&background=5e6ad2&color=fff`;
+        return `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${avatarUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName)}&background=5e6ad2&color=fff'">
+                    <span style="font-weight: 600; font-size: 13.5px; color: var(--text-main);">${escapeHtml(friend.fullName)}</span>
+                </div>
+                <button class="btn btn-primary" id="btn-invite-${friend.id}" onclick="inviteFriendToCommunity(${friend.id})" style="padding: 6px 12px; font-size: 12.5px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: var(--primary-color); color: white;">Mời</button>
+            </div>
+        `;
+    }).join('');
+}
+
+window.filterFriendsToInvite = function(keyword) {
+    const kw = keyword.toLowerCase().trim();
+    const filtered = window.allFriendsList.filter(f => f.fullName && f.fullName.toLowerCase().includes(kw));
+    renderFriendsToInvite(filtered);
+};
+
+window.inviteFriendToCommunity = async function(friendId) {
+    const btn = document.getElementById(`btn-invite-${friendId}`);
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    }
+    
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/communities/${window.currentCommunityId}/invite/${friendId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast("Đã gửi lời mời tham gia nhóm!", "success");
+            if (btn) {
+                btn.className = "btn btn-secondary";
+                btn.style.background = "var(--button-bg)";
+                btn.style.color = "var(--text-muted)";
+                btn.style.border = "1px solid var(--border-color)";
+                btn.textContent = "Đã mời";
+            }
+        } else {
+            showToast(await res.text(), "error");
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "Mời";
+            }
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối", "error");
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Mời";
+        }
+    }
+};
 
 window.toggleDropdown = function(postId) {
     const dropdown = document.getElementById('dropdown-' + postId);

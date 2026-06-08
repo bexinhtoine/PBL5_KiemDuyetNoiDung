@@ -454,6 +454,7 @@ async function submitComment(postId, token) {
         });
 
         if (res.ok) {
+            const newComment = await res.json();
             input.value = '';
             removeCommentMedia();
 
@@ -462,7 +463,20 @@ async function submitComment(postId, token) {
             let currentCount = parseInt(commentCountSpan.innerText) || 0;
             commentCountSpan.innerText = currentCount + 1;
 
-            fetchComments(postId, token); // Refresh list
+            const list = document.getElementById('comments-list-detail');
+            if (list) {
+                // Remove empty state message if exists
+                if (list.innerText.includes('Chưa có bình luận nào')) {
+                    list.innerHTML = '';
+                }
+
+                const commentWrapper = document.createElement('div');
+                commentWrapper.className = 'comment-item-fade-in';
+                commentWrapper.innerHTML = renderCommentItem(newComment);
+                list.appendChild(commentWrapper);
+
+                commentWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         } else if (res.status === 403) {
             const msg = await res.text();
             if (typeof showBanModal === 'function') {

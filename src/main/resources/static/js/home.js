@@ -345,7 +345,6 @@ function prependCreatedPostToFeed(post) {
                 <button class="interaction-btn" onclick="toggleComments(${post.id})">
                     <i class="fa-regular fa-comment"></i> <span id="comment-count-${post.id}">Bình luận (${post.commentCount || 0})</span>
                 </button>
-                <button class="interaction-btn"><i class="fa-regular fa-share-from-square"></i> Chia sẻ</button>
                 <button id="bookmark-btn-${post.id}" class="interaction-btn" onclick="toggleBookmark(${post.id})" style="margin-left: auto;"><i class="fa-regular fa-bookmark"></i></button>
             </div>
 
@@ -521,7 +520,6 @@ function renderPosts(posts, token) {
                 <button class="interaction-btn" onclick="toggleComments(${post.id})">
                     <i class="fa-regular fa-comment"></i> <span id="comment-count-${post.id}">Bình luận (${post.commentCount})</span>
                 </button>
-                <button class="interaction-btn"><i class="fa-regular fa-share-from-square"></i> Chia sẻ</button>
                 <button id="bookmark-btn-${post.id}" class="interaction-btn" onclick="toggleBookmark(${post.id})" style="margin-left: auto; ${post.bookmarkedByCurrentUser ? 'color: var(--primary-color);' : ''}"><i class="${post.bookmarkedByCurrentUser ? 'fa-solid' : 'fa-regular'} fa-bookmark"></i></button>
             </div>
 
@@ -946,6 +944,12 @@ async function toggleBookmark(postId) {
         btn.style.color = 'var(--primary-color)';
     }
 
+    // Add pop animation effect
+    icon.classList.add('pop-active');
+    icon.addEventListener('animationend', () => {
+        icon.classList.remove('pop-active');
+    }, { once: true });
+
     try {
         const res = await fetch(`/api/posts/${postId}/bookmark`, {
             method: 'POST',
@@ -1201,19 +1205,32 @@ async function submitComment(postId) {
         });
 
         if (res.ok) {
+            const newComment = await res.json();
             input.value = '';
             removeCommentMedia(postId);
 
-            // Optimistic UI update: cộng số bình luận (nếu chưa cộng)
+            const listDiv = document.getElementById(`comment-list-${postId}`);
+            if (listDiv) {
+                // Remove empty state message if exists
+                if (listDiv.innerText.includes('Chưa có bình luận nào')) {
+                    listDiv.innerHTML = '';
+                }
+
+                const commentWrapper = document.createElement('div');
+                commentWrapper.className = 'comment-item-fade-in';
+                commentWrapper.innerHTML = renderCommentItem(newComment, postId);
+                listDiv.appendChild(commentWrapper);
+
+                commentWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // Update comment count
             const commentCountSpan = document.getElementById(`comment-count-${postId}`);
             if (commentCountSpan) {
                 const countMatch = commentCountSpan.innerText.match(/\d+/);
                 let currentCount = countMatch ? parseInt(countMatch[0], 10) : 0;
-                // Note: we don't increment here if we already did it optimistically elsewhere, 
-                // but fetchComments will refresh anyway.
+                commentCountSpan.innerText = `Bình luận (${currentCount + 1})`;
             }
-
-            fetchComments(postId);
         } else {
             alert('Lỗi gửi bình luận');
         }

@@ -8,7 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "posts")
+@Table(name = "posts", indexes = {
+    @Index(name = "idx_post_community_id", columnList = "community_id"),
+    @Index(name = "idx_post_content", columnList = "content")
+})
 public class Post extends BaseContent {
 
     @Column(columnDefinition = "TEXT")
@@ -87,6 +90,14 @@ public class Post extends BaseContent {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "community_id", nullable = true)
     private Community community;
+
+    @ManyToMany
+    @JoinTable(
+        name = "post_tags",
+        joinColumns = @JoinColumn(name = "post_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private List<CommunityTag> tags = new ArrayList<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Like> likes = new ArrayList<>();
@@ -324,5 +335,13 @@ public class Post extends BaseContent {
 
     public void setPinned(boolean pinned) {
         this.pinned = pinned;
+    }
+
+    public List<CommunityTag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<CommunityTag> tags) {
+        this.tags = tags;
     }
 }

@@ -6,6 +6,7 @@ public class CreatePostRequest {
     private String videoUrl;
     private String visibility;
     private Long communityId;
+    private java.util.List<String> tags;
 
     public CreatePostRequest() {
     }
@@ -55,5 +56,13 @@ public class CreatePostRequest {
 
     public void setCommunityId(Long communityId) {
         this.communityId = communityId;
+    }
+
+    public java.util.List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(java.util.List<String> tags) {
+        this.tags = tags;
     }
 }

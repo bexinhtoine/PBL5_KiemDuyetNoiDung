@@ -8,6 +8,7 @@ import java.util.List;
 @Repository
 public interface CommunityActivityLogRepository extends JpaRepository<CommunityActivityLog, Long> {
     List<CommunityActivityLog> findByCommunityIdOrderByCreatedAtDesc(Long communityId);
+    org.springframework.data.domain.Page<CommunityActivityLog> findByCommunityIdOrderByCreatedAtDesc(Long communityId, org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.transaction.annotation.Transactional
     void deleteByCommunityId(Long communityId);

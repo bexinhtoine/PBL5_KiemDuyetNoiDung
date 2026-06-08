@@ -149,7 +149,6 @@ public class PostController {
 
         // Other users should NOT see pending or deleted posts
         if (p.getStatus() == com.pbl5.enums.PostStatus.PENDING_COMM_ADMIN
-                || p.getStatus() == com.pbl5.enums.PostStatus.PENDING_REVIEW
                 || p.getStatus() == com.pbl5.enums.PostStatus.DELETED) {
             return false;
         }

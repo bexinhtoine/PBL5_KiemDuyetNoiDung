@@ -502,6 +502,14 @@
                     </div>
 
                     <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Phê duyệt thành viên</label>
+                        <select id="new-community-member-approval" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); border-radius: 8px; outline: none; box-sizing: border-box; font-family: inherit; cursor: pointer;">
+                            <option value="AUTO" selected>Tự động duyệt (Người dùng tham gia nhóm ngay lập tức)</option>
+                            <option value="MANUAL">Phê duyệt thủ công (Người dùng cần được admin duyệt để tham gia)</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <label style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Kiểm duyệt bài viết</label>
                         <select id="new-community-post-approval" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); border-radius: 8px; outline: none; box-sizing: border-box; font-family: inherit; cursor: pointer;">
                             <option value="AUTO">Tự động duyệt (AI kiểm duyệt trước, nếu an toàn sẽ tự động hiển thị)</option>

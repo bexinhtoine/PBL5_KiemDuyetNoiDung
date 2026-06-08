@@ -103,6 +103,11 @@ function fillProfileData(user, isCurrentUser) {
         if (modalAvatar) modalAvatar.src = user.avatar;
     }
 
+    if (user.cover) {
+        const pCover = document.getElementById('profile-cover');
+        if (pCover) pCover.src = user.cover;
+    }
+
     const relEl = document.getElementById('profile-relationship');
     if (relEl) relEl.innerText = user.relationshipStatus || '---';
     const emailEl = document.getElementById('profile-email');
@@ -141,6 +146,48 @@ function fillProfileData(user, isCurrentUser) {
         if (editAvt) editAvt.style.display = 'none';
         const editCov = document.querySelector('.edit-cover-btn');
         if (editCov) editCov.style.display = 'none';
+
+        // Xử lý hiển thị điểm chung khi xem trang người khác
+        const mutualSec = document.getElementById('mutual-connections-section');
+        const mutualList = document.getElementById('mutual-connections-list');
+        if (mutualSec && mutualList) {
+            mutualList.innerHTML = '';
+            let hasCommon = false;
+
+            if (user.mutualFriends && user.mutualFriends.length > 0) {
+                hasCommon = true;
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.gap = '8px';
+                
+                const names = user.mutualFriends.slice(0, 3).map(f => `<a href="/html/profile.html?userId=${f.id}" style="color: var(--primary-color); font-weight: 550; text-decoration: none; hover: underline;">${f.fullName}</a>`).join(', ');
+                const suffix = user.mutualFriends.length > 3 ? ` và ${user.mutualFriends.length - 3} người khác` : '';
+                
+                li.innerHTML = `<i class="fa-solid fa-user-group" style="color: var(--text-muted); font-size: 14px; width: 20px; text-align: center;"></i> <span>Bạn chung: ${names}${suffix}</span>`;
+                mutualList.appendChild(li);
+            }
+
+            if (user.commonCommunities && user.commonCommunities.length > 0) {
+                hasCommon = true;
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.gap = '8px';
+
+                const comms = user.commonCommunities.slice(0, 3).map(c => `<a href="/html/community.html?id=${c.id}" style="color: var(--primary-color); font-weight: 550; text-decoration: none; hover: underline;">${c.name}</a>`).join(', ');
+                const suffix = user.commonCommunities.length > 3 ? ` và ${user.commonCommunities.length - 3} nhóm khác` : '';
+
+                li.innerHTML = `<i class="fa-solid fa-users" style="color: var(--text-muted); font-size: 14px; width: 20px; text-align: center;"></i> <span>Cùng tham gia: ${comms}${suffix}</span>`;
+                mutualList.appendChild(li);
+            }
+
+            if (hasCommon) {
+                mutualSec.style.display = 'block';
+            } else {
+                mutualSec.style.display = 'none';
+            }
+        }
 
         // Ẩn khung tạo bài viết
         const createPostBlock = document.querySelector('.create-post-box');
@@ -420,7 +467,6 @@ function renderProfilePosts(posts) {
                 <button class="interaction-btn" onclick="toggleComments(${post.id})">
                     <i class="fa-regular fa-comment"></i> <span id="comment-count-${post.id}">Bình luận (${post.commentCount})</span>
                 </button>
-                <button class="interaction-btn"><i class="fa-regular fa-share-from-square"></i> Chia sẻ</button>
             </div>
 
             <!-- COMMENT SECTION -->
@@ -743,27 +789,29 @@ async function fetchComments(postId) {
             return;
         }
 
-        comments.forEach(c => {
-            const timeStr = timeSince(c.createdAt);
-            listDiv.innerHTML += `
-                <div style="margin-bottom: 10px;">
-                    <div class="comment" style="display: flex; gap: 8px;">
-                        <a href="/html/profile.html?userId=${c.authorId}">
-                            <img src="${c.authorAvatar || '/uploads/default-avatar.png'}" class="avatar-small" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" onerror="this.src='/uploads/default-avatar.png'">
-                        </a>
-                        <div class="comment-bubble" style="background: var(--comment-bg); padding: 8px 12px; border-radius: 18px; max-width: 80%;">
-                            <strong style="font-size: 13px;"><a href="/html/profile.html?userId=${c.authorId}" style="text-decoration:none; color:inherit;">${c.authorName}</a></strong>
-                            <div style="font-size: 14px; margin-top: 2px; white-space: pre-wrap;">${escapeHtml(c.content || '')}</div>
-                        </div>
-                        <div style="margin-top: 5px; cursor: pointer; color: #65676b;" onclick="reportComment(${c.id})" title="Báo cáo bình luận"><i class="fa-regular fa-flag"></i></div>
-                    </div>
-                    <div style="font-size: 11px; color: #65676b; margin-left: 45px; margin-top: 2px;">${timeStr}</div>
-                </div>
-            `;
-        });
+        listDiv.innerHTML = comments.map(c => renderProfileCommentItem(c)).join('');
     } catch (err) {
         console.error("Lỗi lấy comment:", err);
     }
+}
+
+function renderProfileCommentItem(c) {
+    const timeStr = timeSince(c.createdAt);
+    return `
+        <div style="margin-bottom: 10px;">
+            <div class="comment" style="display: flex; gap: 8px;">
+                <a href="/html/profile.html?userId=${c.authorId}">
+                    <img src="${c.authorAvatar || '/uploads/default-avatar.png'}" class="avatar-small" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" onerror="this.src='/uploads/default-avatar.png'">
+                </a>
+                <div class="comment-bubble" style="background: var(--comment-bg); padding: 8px 12px; border-radius: 18px; max-width: 80%;">
+                    <strong style="font-size: 13px;"><a href="/html/profile.html?userId=${c.authorId}" style="text-decoration:none; color:inherit;">${c.authorName}</a></strong>
+                    <div style="font-size: 14px; margin-top: 2px; white-space: pre-wrap;">${escapeHtml(c.content || '')}</div>
+                </div>
+                <div style="margin-top: 5px; cursor: pointer; color: #65676b;" onclick="reportComment(${c.id})" title="Báo cáo bình luận"><i class="fa-regular fa-flag"></i></div>
+            </div>
+            <div style="font-size: 11px; color: #65676b; margin-left: 45px; margin-top: 2px;">${timeStr}</div>
+        </div>
+    `;
 }
 
 function handleCommentKeyPress(event, postId) {
@@ -798,8 +846,22 @@ async function submitComment(postId) {
         });
 
         if (res.ok) {
+            const newComment = await res.json();
             input.value = '';
-            fetchComments(postId); // Chỉ tải lại đúng danh sách bình luận của bài này
+
+            const listDiv = document.getElementById(`comment-list-${postId}`);
+            if (listDiv) {
+                if (listDiv.querySelector('span')) {
+                    listDiv.innerHTML = '';
+                }
+
+                const commentWrapper = document.createElement('div');
+                commentWrapper.className = 'comment-item-fade-in';
+                commentWrapper.innerHTML = renderProfileCommentItem(newComment);
+                listDiv.appendChild(commentWrapper);
+
+                commentWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         } else {
             alert('Lỗi gửi bình luận');
         }
@@ -811,37 +873,93 @@ async function submitComment(postId) {
 // === FRIENDSHIP START ===
 function sendFriendRequest(id) {
     const token = localStorage.getItem('token');
+    const container = document.getElementById('friendship-actions');
+    const btn = container ? container.querySelector('button') : null;
+    if (btn) btn.classList.add('btn-loading');
+
     fetch(`/api/friends/request/${id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
     })
-        .then(res => {
-            if (res.ok) location.reload();
-            else alert("Lỗi gửi yêu cầu");
-        });
+    .then(async res => {
+        if (btn) btn.classList.remove('btn-loading');
+        if (res.ok) {
+            if (container) {
+                container.innerHTML = `<button class="btn btn-secondary pop-active" onclick="removeFriend(${id})"><i class="fa-solid fa-user-clock"></i> Đã gửi lời mời</button>`;
+                const newBtn = container.querySelector('button');
+                newBtn.addEventListener('animationend', () => newBtn.classList.remove('pop-active'), { once: true });
+            }
+            showToast("Đã gửi lời mời kết bạn", "success");
+        } else {
+            const txt = await res.text();
+            showToast(txt || "Lỗi gửi yêu cầu", "error");
+        }
+    })
+    .catch(err => {
+        if (btn) btn.classList.remove('btn-loading');
+        console.error(err);
+    });
 }
+
 function acceptFriendRequest(id) {
     const token = localStorage.getItem('token');
+    const container = document.getElementById('friendship-actions');
+    const btn = container ? container.querySelector('button') : null;
+    if (btn) btn.classList.add('btn-loading');
+
     fetch(`/api/friends/accept/${id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
     })
-        .then(res => {
-            if (res.ok) location.reload();
-            else alert("Lỗi chấp nhận yêu cầu");
-        });
+    .then(async res => {
+        if (btn) btn.classList.remove('btn-loading');
+        if (res.ok) {
+            if (container) {
+                container.innerHTML = `<button class="btn btn-secondary pop-active" onclick="removeFriend(${id})"><i class="fa-solid fa-user-group"></i> Bạn bè</button>`;
+                const newBtn = container.querySelector('button');
+                newBtn.addEventListener('animationend', () => newBtn.classList.remove('pop-active'), { once: true });
+            }
+            showToast("Đã chấp nhận kết bạn", "success");
+        } else {
+            const txt = await res.text();
+            showToast(txt || "Lỗi chấp nhận yêu cầu", "error");
+        }
+    })
+    .catch(err => {
+        if (btn) btn.classList.remove('btn-loading');
+        console.error(err);
+    });
 }
+
 function removeFriend(id) {
     showConfirmModal('Xác nhận thao tác', 'Bạn có chắc chắn muốn thực hiện thao tác này?', () => {
         const token = localStorage.getItem('token');
+        const container = document.getElementById('friendship-actions');
+        const btn = container ? container.querySelector('button') : null;
+        if (btn) btn.classList.add('btn-loading');
+
         fetch(`/api/friends/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         })
-            .then(res => {
-                if (res.ok) location.reload();
-                else showToast("Lỗi xóa/hủy", "error");
-            });
+        .then(async res => {
+            if (btn) btn.classList.remove('btn-loading');
+            if (res.ok) {
+                if (container) {
+                    container.innerHTML = `<button class="btn btn-primary pop-active" onclick="sendFriendRequest(${id})"><i class="fa-solid fa-user-plus"></i> Thêm bạn bè</button>`;
+                    const newBtn = container.querySelector('button');
+                    newBtn.addEventListener('animationend', () => newBtn.classList.remove('pop-active'), { once: true });
+                }
+                showToast("Đã hủy kết bạn/yêu cầu", "info");
+            } else {
+                const txt = await res.text();
+                showToast(txt || "Lỗi thao tác", "error");
+            }
+        })
+        .catch(err => {
+            if (btn) btn.classList.remove('btn-loading');
+            console.error(err);
+        });
     });
 }
 // === FRIENDSHIP END ===
@@ -1133,7 +1251,6 @@ window.prependCreatedPostToFeed = function (post) {
             <button class="interaction-btn" onclick="toggleComments(${post.id})">
                 <i class="fa-regular fa-comment"></i> <span id="comment-count-${post.id}">Bình luận (0)</span>
             </button>
-            <button class="interaction-btn"><i class="fa-regular fa-share-from-square"></i> Chia sẻ</button>
         </div>
         <div id="comments-${post.id}" class="comments-section" style="display: none; padding: 15px; border-top: 1px solid #ced0d4;">
             <div class="comment-input-wrapper" style="display: flex; gap: 10px; margin-bottom: 15px;">

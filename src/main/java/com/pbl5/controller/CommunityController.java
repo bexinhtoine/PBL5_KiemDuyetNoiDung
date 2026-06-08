@@ -60,6 +60,12 @@ public class CommunityController {
     @Autowired
     private CommunityActivityLogRepository communityActivityLogRepository;
 
+    @Autowired
+    private com.pbl5.repository.CommunityTagRepository communityTagRepository;
+
+    @Autowired
+    private com.pbl5.repository.CommunityInvitationRepository communityInvitationRepository;
+
     @PostMapping("/create")
     public ResponseEntity<?> createCommunity(
             @RequestHeader("Authorization") String authHeader,
@@ -229,7 +235,9 @@ public class CommunityController {
     @GetMapping("/{id}/posts")
     public ResponseEntity<?> getCommunityPosts(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "tag", required = false) String tag) {
 
         User user = getAuthenticatedUser(authHeader);
         if (user == null) {
@@ -251,7 +259,12 @@ public class CommunityController {
                 }
             }
 
-             List<Post> posts = postRepository.findByCommunityIdAndStatusOrderByCreatedAtDesc(id, com.pbl5.enums.PostStatus.ACTIVE);
+            List<Post> posts;
+            if ((search != null && !search.trim().isEmpty()) || (tag != null && !tag.trim().isEmpty())) {
+                posts = postRepository.searchCommunityPosts(id, search, tag);
+            } else {
+                posts = postRepository.findByCommunityIdAndStatusInOrderByCreatedAtDesc(id, List.of(com.pbl5.enums.PostStatus.ACTIVE, com.pbl5.enums.PostStatus.PENDING_REVIEW));
+            }
             List<com.pbl5.dto.PostResponse> responses = postService.convertToResponses(posts, user);
             return ResponseEntity.ok(responses);
         } catch (IllegalArgumentException e) {
@@ -1011,6 +1024,16 @@ public class CommunityController {
 
             communityService.logActivity(community, user, "Đã ghim bài viết #" + post.getId());
 
+            if (post.getUser() != null) {
+                communityService.sendNotification(
+                        post.getUser(),
+                        user,
+                        "POST_PINNED",
+                        "Bài viết của bạn trong cộng đồng \"" + community.getName() + "\" đã được ghim lên đầu nhóm.",
+                        "/html/community.html?id=" + id
+                );
+            }
+
             return ResponseEntity.ok("Đã ghim bài viết thành công.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -1060,7 +1083,9 @@ public class CommunityController {
     @GetMapping("/{id}/logs")
     public ResponseEntity<?> getCommunityLogs(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         User user = getAuthenticatedUser(authHeader);
         if (user == null) {
             return ResponseEntity.status(401).body("Chưa đăng nhập.");
@@ -1077,8 +1102,10 @@ public class CommunityController {
                 return ResponseEntity.status(403).body("Chỉ quản trị viên hoặc chủ sở hữu mới có quyền xem nhật ký hoạt động.");
             }
 
-            List<CommunityActivityLog> logs = communityActivityLogRepository.findByCommunityIdOrderByCreatedAtDesc(id);
-            List<java.util.Map<String, Object>> responses = logs.stream().map(l -> {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+            org.springframework.data.domain.Page<CommunityActivityLog> logsPage = communityActivityLogRepository.findByCommunityIdOrderByCreatedAtDesc(id, pageable);
+
+            List<java.util.Map<String, Object>> content = logsPage.getContent().stream().map(l -> {
                 java.util.Map<String, Object> map = new java.util.HashMap<>();
                 map.put("id", l.getId());
                 map.put("action", l.getAction());
@@ -1087,7 +1114,409 @@ public class CommunityController {
                 return map;
             }).collect(Collectors.toList());
 
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("content", content);
+            response.put("currentPage", logsPage.getNumber());
+            response.put("totalItems", logsPage.getTotalElements());
+            response.put("totalPages", logsPage.getTotalPages());
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // ================= NEW ENDPOINTS =================
+
+    // 1. Tag endpoints
+    @GetMapping("/{id}/tags")
+    public ResponseEntity<?> getCommunityTags(@PathVariable Long id) {
+        try {
+            List<com.pbl5.model.CommunityTag> tags = communityTagRepository.findByCommunityId(id);
+            List<String> tagNames = tags.stream().map(com.pbl5.model.CommunityTag::getName).collect(Collectors.toList());
+            return ResponseEntity.ok(tagNames);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/tags")
+    @Transactional
+    public ResponseEntity<?> updateCommunityTags(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id,
+            @RequestBody List<String> tagNames) {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Chưa đăng nhập.");
+        }
+
+        try {
+            Community community = communityService.getCommunityById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cộng đồng."));
+
+            CommunityMember currentMember = communityMemberRepository.findByCommunityIdAndUserId(id, user.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Bạn không phải thành viên của cộng đồng này."));
+
+            if (currentMember.getRole() != com.pbl5.enums.CommunityRole.OWNER && currentMember.getRole() != com.pbl5.enums.CommunityRole.ADMIN) {
+                return ResponseEntity.status(403).body("Chỉ quản trị viên mới có quyền cập nhật tag.");
+            }
+
+            if (tagNames.size() > 15) {
+                return ResponseEntity.badRequest().body("Cộng đồng có tối đa 15 tag.");
+            }
+
+            communityTagRepository.deleteByCommunityId(id);
+            for (String name : tagNames) {
+                if (name != null && !name.trim().isEmpty()) {
+                    com.pbl5.model.CommunityTag tag = new com.pbl5.model.CommunityTag();
+                    tag.setCommunity(community);
+                    tag.setName(name.trim());
+                    communityTagRepository.save(tag);
+                }
+            }
+
+            communityService.logActivity(community, user, "Đã cập nhật danh sách tag nhóm (" + tagNames.size() + " tag)");
+
+            return ResponseEntity.ok("Cập nhật danh sách tag thành công.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 2. Invite Friend endpoints
+    @PostMapping("/{id}/invite/{friendId}")
+    @Transactional
+    public ResponseEntity<?> inviteFriend(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id,
+            @PathVariable Long friendId) {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Chưa đăng nhập.");
+        }
+
+        try {
+            Community community = communityService.getCommunityById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cộng đồng."));
+
+            CommunityMember senderMember = communityMemberRepository.findByCommunityIdAndUserId(id, user.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Bạn phải là thành viên để thực hiện mời bạn bè."));
+
+            if (senderMember.getStatus() != com.pbl5.enums.CommunityMemberStatus.ACTIVE) {
+                return ResponseEntity.status(403).body("Tài khoản của bạn chưa được kích hoạt trong cộng đồng này.");
+            }
+
+            User friend = userRepository.findById(friendId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bạn bè được mời."));
+
+            // Check if friend is already member
+            Optional<CommunityMember> targetMemberOpt = communityMemberRepository.findByCommunityIdAndUserId(id, friendId);
+            if (targetMemberOpt.isPresent()) {
+                com.pbl5.enums.CommunityMemberStatus status = targetMemberOpt.get().getStatus();
+                if (status == com.pbl5.enums.CommunityMemberStatus.ACTIVE) {
+                    return ResponseEntity.badRequest().body("Người dùng này đã là thành viên nhóm.");
+                } else if (status == com.pbl5.enums.CommunityMemberStatus.PENDING) {
+                    return ResponseEntity.badRequest().body("Người dùng này đang chờ phê duyệt tham gia nhóm.");
+                } else {
+                    return ResponseEntity.badRequest().body("Người dùng này đang bị chặn khỏi nhóm.");
+                }
+            }
+
+            // Check if there is an active pending invite
+            boolean existsPending = communityInvitationRepository.existsByCommunityIdAndReceiverIdAndStatus(id, friendId, com.pbl5.enums.CommunityInvitationStatus.PENDING);
+            if (existsPending) {
+                return ResponseEntity.badRequest().body("Lời mời đã được gửi trước đó và đang chờ xử lý.");
+            }
+
+            com.pbl5.model.CommunityInvitation invite = new com.pbl5.model.CommunityInvitation();
+            invite.setCommunity(community);
+            invite.setSender(user);
+            invite.setReceiver(friend);
+            invite.setStatus(com.pbl5.enums.CommunityInvitationStatus.PENDING);
+            communityInvitationRepository.save(invite);
+
+            // Send notification and WS
+            communityService.sendNotification(
+                    friend,
+                    user,
+                    "COMMUNITY_INVITE",
+                    user.getFullName() + " đã mời bạn tham gia cộng đồng \"" + community.getName() + "\".",
+                    "/html/community.html?id=" + id
+            );
+
+            return ResponseEntity.ok("Đã gửi lời mời thành công.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/invitations")
+    public ResponseEntity<?> getMyInvitations(@RequestHeader("Authorization") String authHeader) {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Chưa đăng nhập.");
+        }
+
+        try {
+            List<com.pbl5.model.CommunityInvitation> invites = communityInvitationRepository.findByReceiverIdAndStatusOrderByCreatedAtDesc(user.getId(), com.pbl5.enums.CommunityInvitationStatus.PENDING);
+            List<java.util.Map<String, Object>> responses = invites.stream().map(i -> {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", i.getId());
+                map.put("communityId", i.getCommunity().getId());
+                map.put("communityName", i.getCommunity().getName());
+                map.put("communityAvatar", i.getCommunity().getAvatarUrl());
+                map.put("senderId", i.getSender().getId());
+                map.put("senderName", i.getSender().getFullName());
+                map.put("createdAt", i.getCreatedAt());
+                return map;
+            }).collect(Collectors.toList());
+
             return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/invitations/{inviteId}/accept")
+    @Transactional
+    public ResponseEntity<?> acceptInvitation(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long inviteId) {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Chưa đăng nhập.");
+        }
+
+        try {
+            com.pbl5.model.CommunityInvitation invite = communityInvitationRepository.findById(inviteId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lời mời."));
+
+            if (!invite.getReceiver().getId().equals(user.getId())) {
+                return ResponseEntity.status(403).body("Không có quyền thực hiện.");
+            }
+
+            if (invite.getStatus() != com.pbl5.enums.CommunityInvitationStatus.PENDING) {
+                return ResponseEntity.badRequest().body("Lời mời không ở trạng thái chờ xử lý.");
+            }
+
+            Community community = invite.getCommunity();
+
+            // Check if member already exists
+            Optional<CommunityMember> existingMemberOpt = communityMemberRepository.findByCommunityIdAndUserId(community.getId(), user.getId());
+            CommunityMember member;
+            if (existingMemberOpt.isPresent()) {
+                member = existingMemberOpt.get();
+                if (member.getStatus() == com.pbl5.enums.CommunityMemberStatus.ACTIVE) {
+                    invite.setStatus(com.pbl5.enums.CommunityInvitationStatus.ACCEPTED);
+                    communityInvitationRepository.save(invite);
+                    return ResponseEntity.ok(java.util.Map.of("message", "Bạn đã là thành viên của cộng đồng này.", "status", "ACTIVE"));
+                } else if (member.getStatus() == com.pbl5.enums.CommunityMemberStatus.BLOCKED) {
+                    return ResponseEntity.badRequest().body("Bạn đang bị chặn khỏi cộng đồng này.");
+                }
+            } else {
+                member = new CommunityMember();
+                member.setCommunity(community);
+                member.setUser(user);
+                member.setRole(com.pbl5.enums.CommunityRole.MEMBER);
+            }
+
+            if (community.getRequireApproval() != null && community.getRequireApproval()) {
+                member.setStatus(com.pbl5.enums.CommunityMemberStatus.PENDING);
+            } else {
+                member.setStatus(com.pbl5.enums.CommunityMemberStatus.ACTIVE);
+            }
+            communityMemberRepository.save(member);
+
+            invite.setStatus(com.pbl5.enums.CommunityInvitationStatus.ACCEPTED);
+            communityInvitationRepository.save(invite);
+
+            if (member.getStatus() == com.pbl5.enums.CommunityMemberStatus.ACTIVE) {
+                communityService.logActivity(community, user, user.getFullName() + " đã tham gia cộng đồng qua lời mời của " + invite.getSender().getFullName());
+                // Notify the sender
+                communityService.sendNotification(
+                        invite.getSender(),
+                        user,
+                        "COMMUNITY_INVITE_ACCEPT",
+                        user.getFullName() + " đã chấp nhận lời mời tham gia cộng đồng \"" + community.getName() + "\" của bạn.",
+                        "/html/community.html?id=" + community.getId()
+                );
+                return ResponseEntity.ok(java.util.Map.of("message", "Tham gia cộng đồng thành công.", "status", "ACTIVE"));
+            } else {
+                if (community.getCreator() != null) {
+                    communityService.sendNotification(
+                            community.getCreator(),
+                            user,
+                            "COMMUNITY_REQUEST",
+                            user.getFullName() + " đã gửi yêu cầu tham gia cộng đồng " + community.getName() + " (chấp nhận lời mời).",
+                            "/html/community.html?id=" + community.getId() + "&tab=manage"
+                    );
+                }
+                return ResponseEntity.ok(java.util.Map.of("message", "Đã gửi yêu cầu tham gia nhóm chờ phê duyệt.", "status", "PENDING"));
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/invitations/{inviteId}/decline")
+    @Transactional
+    public ResponseEntity<?> declineInvitation(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long inviteId) {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Chưa đăng nhập.");
+        }
+
+        try {
+            com.pbl5.model.CommunityInvitation invite = communityInvitationRepository.findById(inviteId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lời mời."));
+
+            if (!invite.getReceiver().getId().equals(user.getId())) {
+                return ResponseEntity.status(403).body("Không có quyền thực hiện.");
+            }
+
+            if (invite.getStatus() != com.pbl5.enums.CommunityInvitationStatus.PENDING) {
+                return ResponseEntity.badRequest().body("Lời mời không ở trạng thái chờ xử lý.");
+            }
+
+            invite.setStatus(com.pbl5.enums.CommunityInvitationStatus.REJECTED);
+            communityInvitationRepository.save(invite);
+
+            return ResponseEntity.ok("Đã từ chối lời mời.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 3. Export Logs endpoint
+    @GetMapping("/{id}/logs/export")
+    public void exportCommunityLogs(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id,
+            @RequestParam(value = "format", defaultValue = "csv") String format,
+            jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            response.sendError(401, "Chưa đăng nhập.");
+            return;
+        }
+
+        try {
+            Community community = communityService.getCommunityById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cộng đồng."));
+
+            CommunityMember currentMember = communityMemberRepository.findByCommunityIdAndUserId(id, user.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Bạn không phải thành viên của cộng đồng này."));
+
+            if (currentMember.getRole() != com.pbl5.enums.CommunityRole.OWNER && currentMember.getRole() != com.pbl5.enums.CommunityRole.ADMIN) {
+                response.sendError(403, "Chỉ quản trị viên mới có quyền xuất nhật ký.");
+                return;
+            }
+
+            List<CommunityActivityLog> logs = communityActivityLogRepository.findByCommunityIdOrderByCreatedAtDesc(id);
+
+            if ("csv".equalsIgnoreCase(format)) {
+                response.setContentType("text/csv; charset=UTF-8");
+                response.setHeader("Content-Disposition", "attachment; filename=\"nhat-ky-" + id + ".csv\"");
+                
+                // Write UTF-8 BOM
+                response.getOutputStream().write(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
+                java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.OutputStreamWriter(response.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8));
+                
+                writer.println("ID,Thời gian,Quản trị viên,Hành động");
+                for (CommunityActivityLog log : logs) {
+                    writer.println(log.getId() + "," +
+                            log.getCreatedAt() + "," +
+                            "\"" + (log.getUser() != null ? log.getUser().getFullName().replace("\"", "\"\"") : "Ẩn danh") + "\"," +
+                            "\"" + log.getAction().replace("\"", "\"\"") + "\"");
+                }
+                writer.flush();
+                writer.close();
+            } else {
+                response.setContentType("application/json; charset=UTF-8");
+                response.setHeader("Content-Disposition", "attachment; filename=\"nhat-ky-" + id + ".json\"");
+                
+                List<java.util.Map<String, Object>> responses = logs.stream().map(l -> {
+                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", l.getId());
+                    map.put("createdAt", l.getCreatedAt().toString());
+                    map.put("adminName", l.getUser() != null ? l.getUser().getFullName() : "Ẩn danh");
+                    map.put("action", l.getAction());
+                    return map;
+                }).collect(Collectors.toList());
+                
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                mapper.writeValue(response.getOutputStream(), responses);
+            }
+        } catch (IllegalArgumentException e) {
+            response.sendError(400, e.getMessage());
+        }
+    }
+
+    // 4. Analytics endpoint
+    @GetMapping("/{id}/analytics")
+    public ResponseEntity<?> getCommunityAnalytics(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id) {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Chưa đăng nhập.");
+        }
+
+        try {
+            Community community = communityService.getCommunityById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cộng đồng."));
+
+            CommunityMember currentMember = communityMemberRepository.findByCommunityIdAndUserId(id, user.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Bạn không phải thành viên của cộng đồng này."));
+
+            if (currentMember.getRole() != com.pbl5.enums.CommunityRole.OWNER && currentMember.getRole() != com.pbl5.enums.CommunityRole.ADMIN) {
+                return ResponseEntity.status(403).body("Chỉ quản trị viên mới có quyền xem thống kê.");
+            }
+
+            java.time.LocalDateTime sevenDaysAgo = java.time.LocalDateTime.now().minusDays(7);
+
+            long newMembersCount = communityMemberRepository.countByCommunityIdAndStatusAndJoinedAtAfter(id, com.pbl5.enums.CommunityMemberStatus.ACTIVE, sevenDaysAgo);
+            long newPostsCount = postRepository.findByCommunityIdAndStatusAndCreatedAtAfterOrderByCreatedAtAsc(id, com.pbl5.enums.PostStatus.ACTIVE, sevenDaysAgo).size();
+            long newReportsCount = reportRepository.countByCommunityIdAndCreatedAtAfter(id, sevenDaysAgo);
+
+            List<CommunityMember> newMembersList = communityMemberRepository.findByCommunityIdAndStatusAndJoinedAtAfterOrderByJoinedAtAsc(id, com.pbl5.enums.CommunityMemberStatus.ACTIVE, sevenDaysAgo);
+            List<Post> newPostsList = postRepository.findByCommunityIdAndStatusAndCreatedAtAfterOrderByCreatedAtAsc(id, com.pbl5.enums.PostStatus.ACTIVE, sevenDaysAgo);
+
+            java.util.Map<String, Integer> membersByDay = new java.util.LinkedHashMap<>();
+            java.util.Map<String, Integer> postsByDay = new java.util.LinkedHashMap<>();
+
+            java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+            for (int i = 6; i >= 0; i--) {
+                String dayStr = java.time.LocalDate.now().minusDays(i).format(dateFormatter);
+                membersByDay.put(dayStr, 0);
+                postsByDay.put(dayStr, 0);
+            }
+
+            for (CommunityMember cm : newMembersList) {
+                String dayStr = cm.getJoinedAt().format(dateFormatter);
+                if (membersByDay.containsKey(dayStr)) {
+                    membersByDay.put(dayStr, membersByDay.get(dayStr) + 1);
+                }
+            }
+
+            for (Post p : newPostsList) {
+                String dayStr = p.getCreatedAt().format(dateFormatter);
+                if (postsByDay.containsKey(dayStr)) {
+                    postsByDay.put(dayStr, postsByDay.get(dayStr) + 1);
+                }
+            }
+
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
+            result.put("newMembersCount", newMembersCount);
+            result.put("newPostsCount", newPostsCount);
+            result.put("newReportsCount", newReportsCount);
+            result.put("membersDaily", membersByDay);
+            result.put("postsDaily", postsByDay);
+
+            return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
