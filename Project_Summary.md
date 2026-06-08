@@ -262,3 +262,134 @@ python app.py
 ---
 
 *Tài liệu được tạo tự động bởi Antigravity AI Coding Assistant — Phiên làm việc 07/06/2026*
+
+---
+
+## 📅 Phiên Làm Việc 08/06/2026
+
+> **Thời gian:** 08/06/2026 (sáng → trưa)
+> **Phạm vi:** Trang cá nhân (Profile), Kiểm duyệt bài viết (Content Moderation), Form Đăng ký (Registration), Quản lý cộng đồng (Community Management)
+
+---
+
+### ✅ Những Gì Đã Làm Được
+
+#### 1. 🎨 Sửa Lỗi Giao Diện Chỉnh Sửa Trang Cá Nhân (Light/Dark Mode)
+
+- **Vấn đề:** Modal "Chỉnh sửa Trang cá nhân" và Modal "Cắt ảnh" hiển thị sai màu sắc ở chế độ Light Mode do các biến CSS chưa được định nghĩa (`--surface-1`, `--surface-2`, `--surface-3`, `--canvas`, `--on-primary`). Văn bản tối hiển thị trên nền tối, gây mất tương phản nghiêm trọng.
+- **Giải pháp:**
+  - Ánh xạ đầy đủ các biến CSS thiếu trong [`home.css`](src/main/resources/static/css/home.css) để tương thích cả Light/Dark Mode.
+  - Bổ sung quy tắc CSS cho `<option>` trong `.post-input select` đảm bảo màu chữ đọc được trên cả 2 mode.
+- **Kết quả:** Modal hiển thị đẹp, hài hòa, đạt chuẩn UX premium trên cả 2 chế độ.
+
+---
+
+#### 2. 🖼️ Cải Tiến Trang Cá Nhân (Profile Enhancements)
+
+- **Thay dropdown mặc định bằng custom dropdown** (thiết kế tương tự Moderator/Admin) cho các trường chọn trong form chỉnh sửa cá nhân.
+- **Thêm tính năng ảnh bìa (Cover Photo):**
+  - Upload ảnh bìa lên Cloudinary qua API hiện có.
+  - Hiển thị preview ảnh bìa ngay trên trang cá nhân.
+  - Lưu URL ảnh bìa vào trường `coverPhoto` của `User`.
+- **Điểm chung khi xem trang người khác:**
+  - Khi xem trang cá nhân của người dùng khác, hệ thống kiểm tra và hiển thị các điểm tương đồng như:
+    - "Cùng tham gia cộng đồng: [Tên nhóm]"
+    - "Cùng có bạn chung: [Tên bạn]"
+  - Tăng tính kết nối và trải nghiệm xã hội giữa các người dùng.
+
+---
+
+#### 3. 🛡️ Cập Nhật Luồng Kiểm Duyệt Bài Viết — Publish-First, Review-Later
+
+**Bối cảnh:** Trước đây, bài viết có điểm AI từ 40–80% (nghi vấn) sẽ bị ẩn và chờ Moderator duyệt. Yêu cầu mới: bài vẫn hiển thị công khai nhưng nằm trong hàng đợi của Moderator.
+
+**Luồng mới (nhóm duyệt thủ công — `requirePostApproval = true`):**
+```
+Người dùng đăng bài
+  → AI quét nội dung (async)
+  → Score < 40%: status = ACTIVE (bình thường)
+  → Score 40–80%: status = PENDING_REVIEW → Hiển thị trên Feed + Vào hàng chờ Moderator hệ thống
+      → Moderator duyệt: status = ACTIVE (giữ nguyên hiển thị)
+      → Moderator từ chối: status = REJECTED → Bị ẩn ngay khỏi mọi Feed
+  → Score > 80%: status = AUTO_REJECTED (ẩn hoàn toàn)
+```
+
+**Luồng mới (nhóm tự động duyệt — `requirePostApproval = false`):**
+```
+Người dùng đăng bài
+  → AI quét nội dung (async)
+  → Score < 40%: status = ACTIVE
+  → Score 40–80%: status = PENDING_REVIEW → Hiển thị trên Feed + Moderator vẫn thấy để kiểm tra
+  → Score > 80%: status = AUTO_REJECTED
+```
+
+**Files đã chỉnh sửa:**
+- [`PostRepository.java`](src/main/java/com/pbl5/repository/PostRepository.java): Cập nhật JPQL queries `findHomeFeed`, `findHomeFeedPaged`, `searchCommunityPosts` để bao gồm bài có status `PENDING_REVIEW` trong feed.
+- [`PostController.java`](src/main/java/com/pbl5/controller/PostController.java): Cập nhật hàm `canViewPost` — người dùng thông thường có thể xem bài `PENDING_REVIEW`.
+- [`CommunityController.java`](src/main/java/com/pbl5/controller/CommunityController.java): API lấy Feed cộng đồng trả về cả `ACTIVE` và `PENDING_REVIEW`.
+
+---
+
+#### 4. 📝 Nâng Cấp Form Đăng Ký Tài Khoản Mới
+
+- **Thêm 2 trường không bắt buộc vào Bước 2 (Thông tin cá nhân):**
+  - **Ảnh đại diện (Avatar):** Upload ảnh, hiển thị preview ngay lập tức. Ảnh được upload bất đồng bộ lên Cloudinary qua `/api/upload/image`.
+  - **Tình trạng mối quan hệ (Relationship Status):** Dropdown với 4 lựa chọn: *Độc thân, Đang hẹn hò, Đã kết hôn, Phức tạp*.
+- **Files đã chỉnh sửa:**
+  - [`RegisterRequest.java`](src/main/java/com/pbl5/dto/RegisterRequest.java): Thêm fields `avatar` và `relationshipStatus`.
+  - [`AuthService.java`](src/main/java/com/pbl5/service/AuthService.java): Lưu 2 thông tin mới vào `User` khi xác thực email thành công.
+  - [`index.html`](src/main/resources/static/index.html): Thêm UI chọn ảnh đại diện và dropdown quan hệ trong `#reg-step-2`.
+  - [`main.js`](src/main/resources/static/js/main.js): Thêm hàm `uploadRegisterAvatar` và đóng gói thêm dữ liệu vào payload API đăng ký.
+
+---
+
+#### 5. ✅ Xác Nhận Hệ Thống Duyệt Bài Trong Cộng Đồng
+
+- Đã kiểm tra và xác nhận hệ thống đã có đầy đủ phân quyền:
+  - **Admin nhóm (Community Admin/Owner):** Duyệt/Từ chối bài viết trong nhóm (`PENDING_COMM_ADMIN` → `ACTIVE`/`REJECTED`).
+  - **Moderator & Admin hệ thống:** Duyệt/Từ chối bài viết nghi vấn (`PENDING_REVIEW` → `ACTIVE`/`REJECTED`).
+  - **Phân tầng rõ ràng:** Admin nhóm duyệt bài của nhóm mình → Nếu AI nghi vấn, Moderator hệ thống duyệt thêm một lần nữa. Hai cấp độ độc lập.
+
+---
+
+### 🧪 Kết Quả Kiểm Thử (08/06/2026)
+
+| Kiểm thử | Kết quả |
+|---------|---------|
+| Biên dịch dự án Java (`mvn clean compile`) — sau tất cả thay đổi | ✅ `BUILD SUCCESS` |
+| Light Mode — Modal chỉnh sửa profile hiển thị đúng | ✅ Màu sắc, tương phản đạt chuẩn |
+| Dark Mode — Modal chỉnh sửa profile hiển thị đúng | ✅ Không thay đổi so với trước |
+| Form đăng ký — Chọn ảnh đại diện và upload | ✅ Upload thành công lên Cloudinary |
+| Form đăng ký — Chọn tình trạng mối quan hệ | ✅ Lưu vào DB khi xác thực email |
+| Feed — Bài `PENDING_REVIEW` hiển thị trong Home Feed | ✅ Hiển thị đúng |
+| Feed — Bài `PENDING_REVIEW` hiển thị trong Group Feed | ✅ Hiển thị đúng |
+| Moderator — Bài `PENDING_REVIEW` vẫn nằm trong hàng chờ | ✅ Moderator thấy và có thể duyệt/từ chối |
+| Moderator từ chối → Bài bị ẩn ngay khỏi Feed | ✅ Trạng thái REJECTED ẩn bài |
+| Khởi động server (Python + Java) | ✅ Cả 2 server hoạt động bình thường |
+
+---
+
+### ❌ Những Gì Chưa Làm Được / Còn Thiếu (08/06/2026)
+
+| # | Hạng mục | Lý do / Ghi chú |
+|---|----------|----------------|
+| 1 | **Kiểm thử giao diện thực tế (E2E)** | Chỉ kiểm tra biên dịch, chưa có kịch bản test thủ công đầy đủ từ đầu đến cuối |
+| 2 | **Thông báo cho tác giả khi bài bị ẩn sau khi Moderator từ chối** | Chưa tích hợp WebSocket notification khi trạng thái bài chuyển `PENDING_REVIEW → REJECTED` |
+| 3 | **Hiển thị badge "Đang chờ duyệt" trên bài viết `PENDING_REVIEW` cho tác giả** | Tác giả chưa biết bài đang bị theo dõi bởi Moderator |
+| 4 | **Điểm chung khi xem profile người khác — kiểm tra thực tế UI** | Chức năng đã được phát triển nhưng chưa verify trực tiếp trên giao diện |
+| 5 | **Ảnh bìa (Cover Photo) — hiển thị đồng bộ trên tất cả trang** | Trang cá nhân đã có, nhưng chưa đồng bộ hiển thị trên card bạn bè, danh sách tìm kiếm |
+| 6 | **Unit Test / Integration Test tự động** | Dự án chưa có bộ test tự động — mọi kiểm tra đang là thủ công |
+
+---
+
+### 🔮 Hướng Phát Triển Tiếp Theo
+
+1. **Thông báo thời gian thực khi bài bị Moderator ẩn** — Push WebSocket notification đến tác giả.
+2. **Badge trạng thái trên bài viết của tác giả** — Hiển thị nhãn "⏳ Đang xem xét" nhỏ chỉ tác giả thấy.
+3. **Đồng bộ ảnh bìa** — Hiển thị cover photo trên card bạn bè và trang tìm kiếm người dùng.
+4. **Kiểm tra toàn diện E2E** — Chạy kịch bản test đầy đủ từng luồng nghiệp vụ chính.
+5. **Mở rộng form đăng ký** — Thêm thông tin sở thích, nghề nghiệp, địa chỉ (tùy chọn).
+
+---
+
+*Cập nhật bởi Antigravity AI Coding Assistant — Phiên làm việc 08/06/2026*

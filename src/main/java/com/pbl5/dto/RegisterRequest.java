@@ -8,6 +8,8 @@ public class RegisterRequest {
     private String gender;
     private String phoneNumber;
     private java.time.LocalDate dateOfBirth;
+    private String avatar;
+    private String relationshipStatus;
 
     // Getters Setters
     public String getEmail() { return email; }
@@ -24,4 +26,8 @@ public class RegisterRequest {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public java.time.LocalDate getDateOfBirth() { return dateOfBirth; }
     public void setDateOfBirth(java.time.LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
+    public String getRelationshipStatus() { return relationshipStatus; }
+    public void setRelationshipStatus(String relationshipStatus) { this.relationshipStatus = relationshipStatus; }
 }

@@ -228,6 +228,38 @@
                                 </div>
                             </div>
 
+                            <!-- Avatar (Không bắt buộc) -->
+                            <div class="input-group" style="margin-top: 15px;">
+                                <label>Ảnh đại diện (Không bắt buộc)</label>
+                                <div style="display: flex; align-items: center; gap: 15px; background: var(--surface-2); padding: 10px 15px; border-radius: 10px;">
+                                    <img id="reg-avatar-preview" src="/uploads/default-avatar.png" 
+                                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                                    <input type="file" id="reg-avatar-file" accept="image/*" style="display: none;" onchange="uploadRegisterAvatar(event)">
+                                    <button type="button" id="reg-avatar-upload-btn" class="btn btn-outline" 
+                                            onclick="document.getElementById('reg-avatar-file').click()" 
+                                            style="padding: 6px 12px; font-size: 13px;">
+                                        <i class="fa-solid fa-camera"></i> Chọn ảnh
+                                    </button>
+                                    <input type="hidden" id="reg-avatar-url" value="">
+                                </div>
+                            </div>
+
+                            <!-- Mối quan hệ (Không bắt buộc) -->
+                            <div class="input-group" style="margin-top: 15px;">
+                                <label for="reg-relationship">Tình trạng mối quan hệ (Không bắt buộc)</label>
+                                <div class="input-with-icon">
+                                    <select id="reg-relationship" class="form-select custom-select">
+                                        <option value="">-- Chọn tình trạng --</option>
+                                        <option value="Độc thân">Độc thân</option>
+                                        <option value="Đang hẹn hò">Đang hẹn hò</option>
+                                        <option value="Đã kết hôn">Đã kết hôn</option>
+                                        <option value="Phức tạp">Phức tạp</option>
+                                    </select>
+                                    <i class="fa-solid fa-circle-check auth-icon success-icon hidden" style="right: 35px;"></i>
+                                </div>
+                                <small class="error-msg"></small>
+                            </div>
+
                             <div style="display:flex; gap:10px; margin-top: 15px;">
                                 <button type="button" class="btn btn-outline full-width" onclick="prevStep(2)"
                                     style="flex: 1;">Quay lại</button>

@@ -149,6 +149,40 @@ window.prevStep = function(currentStep) {
     if (currentStep === 3) document.getElementById('reg-subtitle').innerText = 'Bước 2: Thông tin cá nhân';
 }
 
+window.uploadRegisterAvatar = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const previewImg = document.getElementById('reg-avatar-preview');
+    const uploadBtn = document.getElementById('reg-avatar-upload-btn');
+    const hiddenInput = document.getElementById('reg-avatar-url');
+
+    uploadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải...';
+    uploadBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/upload/image', {
+            method: 'POST',
+            body: formData
+        });
+        if (!res.ok) throw new Error('Không thể tải ảnh lên');
+        const data = await res.json();
+        const url = data.imageUrl;
+
+        hiddenInput.value = url;
+        previewImg.src = url;
+        uploadBtn.innerHTML = '<i class="fa-solid fa-check"></i> Đã tải lên';
+    } catch (err) {
+        alert('Lỗi tải ảnh đại diện: ' + err.message);
+        uploadBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Chọn ảnh';
+    } finally {
+        uploadBtn.disabled = false;
+    }
+};
+
 document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!document.getElementById('reg-terms').checked) {
@@ -165,6 +199,8 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     const gender = document.getElementById('reg-gender').value;
     const phoneNumber = document.getElementById('reg-phone').value;
     const dateOfBirth = document.getElementById('reg-dob').value;
+    const avatar = document.getElementById('reg-avatar-url').value;
+    const relationshipStatus = document.getElementById('reg-relationship').value;
 
     const btnSubmit = document.getElementById('btn-submit-reg');
     btnSubmit.disabled = true;
@@ -174,7 +210,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         const res = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password, fullName, gender, phoneNumber, dateOfBirth })
+            body: JSON.stringify({ username, email, password, fullName, gender, phoneNumber, dateOfBirth, avatar, relationshipStatus })
         });
         const data = await res.json();
         

@@ -190,6 +190,8 @@ public class AuthService {
         user.setGender(request.getGender());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setDateOfBirth(request.getDateOfBirth());
+        user.setAvatar(request.getAvatar());
+        user.setRelationshipStatus(request.getRelationshipStatus());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setProvider(Provider.LOCAL);
         user.setStatus(UserStatus.ACTIVE);
