@@ -108,7 +108,7 @@ public class PostController {
             return false;
         }
 
-        // Handle deleted/rejected/AI rejected posts with 3-day grace period
+        // Handle deleted/rejected/AI rejected posts: allowed for admins, moderators, and the author
         if (p.getStatus() == com.pbl5.enums.PostStatus.REJECTED
                 || p.getStatus() == com.pbl5.enums.PostStatus.AUTO_REJECTED
                 || p.getStatus() == com.pbl5.enums.PostStatus.REJECTED_BY_AI) {
@@ -117,13 +117,7 @@ public class PostController {
                 return true;
             }
             if (p.getUser().getId().equals(currentUser.getId())) {
-                LocalDateTime deleteTime = p.getReviewedAt();
-                if (deleteTime == null) {
-                    deleteTime = p.getCreatedAt();
-                }
-                if (deleteTime != null && deleteTime.plusDays(3).isAfter(LocalDateTime.now())) {
-                    return true;
-                }
+                return true;
             }
             return false;
         }

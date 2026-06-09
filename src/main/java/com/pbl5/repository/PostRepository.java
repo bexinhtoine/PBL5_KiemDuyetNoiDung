@@ -150,4 +150,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
        List<Post> findByCommunityIdAndStatusAndCreatedAtAfterOrderByCreatedAtAsc(Long communityId,
                      com.pbl5.enums.PostStatus status, java.time.LocalDateTime date);
+
+       long countByCommunityIdAndStatusIn(Long communityId, List<com.pbl5.enums.PostStatus> statuses);
 }

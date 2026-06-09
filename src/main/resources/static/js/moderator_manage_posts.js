@@ -8,6 +8,7 @@ function renderManagePostsFeed(posts) {
 
     // Search & Filter listeners
     const searchInput = document.getElementById('manage-search-input');
+    const sourceFilter = document.getElementById('manage-source-filter');
     const typeFilter = document.getElementById('manage-type-filter');
     const visibilityFilter = document.getElementById('manage-visibility-filter');
 
@@ -18,11 +19,13 @@ function renderManagePostsFeed(posts) {
             renderManagePostsFeed(window.cache.posts);
         };
         searchInput.addEventListener('input', update);
+        if (sourceFilter) sourceFilter.addEventListener('change', update);
         if (typeFilter) typeFilter.addEventListener('change', update);
         if (visibilityFilter) visibilityFilter.addEventListener('change', update);
     }
 
     const searchVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    const sourceVal = sourceFilter ? sourceFilter.value : 'ALL';
     const typeVal = typeFilter ? typeFilter.value : 'ALL';
     const visibilityVal = visibilityFilter ? visibilityFilter.value : 'ALL';
 
@@ -36,15 +39,20 @@ function renderManagePostsFeed(posts) {
             searchMatch = idMatch || authorIdMatch || authorNameMatch;
         }
 
+        // Source: personal vs group
+        let sourceMatch = true;
+        if (sourceVal === 'GROUP') {
+            sourceMatch = !!(post.communityId || post.groupId || post.communityName);
+        } else if (sourceVal === 'PERSONAL') {
+            sourceMatch = !(post.communityId || post.groupId || post.communityName);
+        }
+
         // Type
         let typeMatch = true;
         const postStatus = String(post.status || '').toUpperCase();
         if (typeVal === 'NORMAL') {
-            // Bài viết bình thường là những bài AI xác định an toàn (ACTIVE)
             typeMatch = postStatus === 'ACTIVE';
         } else if (typeVal === 'REVIEW') {
-            // Bài viết kiểm tra bao gồm tất cả các bài có trong tab Duyệt bài viết 
-            // (Chờ duyệt, Đã duyệt, Đã xóa/Gỡ)
             typeMatch = postStatus !== 'ACTIVE';
         }
 
@@ -52,7 +60,7 @@ function renderManagePostsFeed(posts) {
         let visibilityMatch = true;
         if (visibilityVal !== 'ALL') visibilityMatch = post.visibility === visibilityVal;
 
-        return searchMatch && typeMatch && visibilityMatch;
+        return searchMatch && sourceMatch && typeMatch && visibilityMatch;
     });
 
     const start = modPostsCurrentPage * MOD_POSTS_PAGE_SIZE;
@@ -63,6 +71,11 @@ function renderManagePostsFeed(posts) {
     const cards = pagePosts.map(post => {
         const authorAvatar = post.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName || 'User')}&background=00d1b2&color=fff`;
         const postTime = typeof timeSince === 'function' ? timeSince(post.createdAt) : 'Vừa xong';
+
+        // Determine if post is from a group/community
+        const isGroupPost = !!(post.communityId || post.groupId || post.communityName);
+        const communityName = post.communityName || post.groupName || null;
+        const communityId = post.communityId || post.groupId || null;
 
         let mediaHtml = '';
         if (post.imageUrl) mediaHtml += `<div class="post-media-container" style="margin-bottom: 12px; text-align: center; background: #000; border-radius: 8px; overflow: hidden;"><img src="${escapeHtml(post.imageUrl)}" style="max-height: 400px; width: 100%; object-fit: contain; display: block; margin: 0 auto;"></div>`;
@@ -91,38 +104,65 @@ function renderManagePostsFeed(posts) {
             `;
         }
 
+        // -------------------------------------------------------
+        // Author header: "UserName → GroupName" for group posts
+        // -------------------------------------------------------
+        const authorLine = isGroupPost
+            ? `<h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span>${escapeHtml(post.authorName || 'Ẩn danh')}</span>
+                <i class="fa-solid fa-arrow-right" style="font-size: 11px; color: #8b5cf6; opacity: 0.8;"></i>
+                <span style="color: #8b5cf6;">${escapeHtml(communityName || 'Nhóm')}</span>
+                <span style="font-weight: 400; color: var(--text-secondary); font-size: 12px;">(ID: ${post.authorId || '?'})</span>
+                ${statusLabel}
+               </h4>`
+            : `<h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span>${escapeHtml(post.authorName || 'Ẩn danh')}</span>
+                <span style="font-weight: 400; color: var(--text-secondary); font-size: 12px;">(ID: ${post.authorId || '?'})</span>
+                ${statusLabel}
+               </h4>`;
+
+        // Source badge (compact, inline below author name)
+        const sourceBadge = isGroupPost
+            ? `<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #8b5cf6; background: rgba(139,92,246,0.1); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(139,92,246,0.25);">
+                <i class="fa-solid fa-users" style="font-size: 10px;"></i> Group
+               </span>`
+            : `<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #0284c7; background: rgba(2,132,199,0.1); padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(2,132,199,0.2);">
+                <i class="fa-solid fa-user" style="font-size: 10px;"></i> Cá nhân
+               </span>`;
+
+        // Border color per source
+        const cardBorderLeft = isGroupPost ? '4px solid #8b5cf6' : '4px solid #0284c7';
+
         return `
-            <article class="card post" style="margin-bottom: 30px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <div class="post-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 18px;">
-                    <img src="${authorAvatar}" alt="Avatar" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #e4e6eb;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
-                            <h4 style="margin: 0; font-size: 17px; font-weight: 700; color: #1c1e21;">${escapeHtml(post.authorName || 'Ẩn danh')} <span style="font-weight: 400; color: #65676b; font-size: 13px;">(ID: ${post.authorId || '?'})</span></h4>
-                            ${statusLabel}
-                        </div>
-                        <div style="font-size: 13px; color: #65676b; margin-top: 4px; display: flex; align-items: center; gap: 10px;">
+            <article class="card post" style="margin-bottom: 30px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: ${cardBorderLeft};">
+                <div class="post-header" style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 18px;">
+                    <img src="${authorAvatar}" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid ${isGroupPost ? '#8b5cf6' : '#0284c7'}; flex-shrink: 0;">
+                    <div style="flex: 1; min-width: 0;">
+                        ${authorLine}
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            ${sourceBadge}
                             <span><i class="fa-solid fa-hashtag"></i> P-${post.id}</span>
                             <span>•</span>
                             <span><i class="fa-solid fa-clock"></i> ${postTime}</span>
                             <span>•</span>
-                            <span>${post.visibility === 'PUBLIC' ? '<i class="fa-solid fa-earth-americas"></i>' : (post.visibility === 'FRIENDS' ? '<i class="fa-solid fa-user-group"></i>' : '<i class="fa-solid fa-lock"></i>')}</span>
+                            <span>${post.visibility === 'PUBLIC' ? '<i class="fa-solid fa-earth-americas"></i> Công khai' : (post.visibility === 'FRIENDS' ? '<i class="fa-solid fa-user-group"></i> Bạn bè' : '<i class="fa-solid fa-lock"></i> Riêng tư')}</span>
                         </div>
                     </div>
-                    <div class="post-actions" style="display: flex; gap: 10px;">
+                    <div class="post-actions" style="display: flex; gap: 8px; flex-shrink: 0;">
                         ${actionButtons}
                     </div>
                 </div>
 
-                <div class="post-content" style="margin-bottom: 15px; font-size: 16px; line-height: 1.6; color: #1c1e21; white-space: pre-wrap;">${escapeHtml(post.content || '(Nội dung trống)')}</div>
+                <div class="post-content" style="margin-bottom: 15px; font-size: 15px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap;">${escapeHtml(post.content || '(Nội dung trống)')}</div>
                 
                 ${mediaHtml}
                 
                 ${auditHtml}
 
-                <div class="post-footer" style="padding-top: 15px; border-top: 1px solid #e4e6eb; display: flex; gap: 30px; color: #65676b; font-size: 14px; align-items: center;">
-                    <span title="Lượt thích"><i class="fa-solid fa-thumbs-up" style="color: #3498db;"></i> <strong>${post.likeCount || 0}</strong></span>
+                <div class="post-footer" style="padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 25px; color: var(--text-secondary); font-size: 14px; align-items: center;">
+                    <span title="Lượt thả tim"><i class="fa-solid fa-heart" style="color: #e74c3c;"></i> <strong>${post.likeCount || 0}</strong></span>
                     <span title="Bình luận"><i class="fa-solid fa-comment" style="color: #00d1b2;"></i> <strong>${post.commentCount || 0}</strong></span>
-                    <button class="btn-action" style="margin-left: auto; background: #3498db; border: none; color: #fff; cursor: pointer; font-weight: 600; padding: 7px 18px; border-radius: 8px; display: flex; align-items: center; gap: 6px; position: relative; z-index: 999;" onclick="viewPostDetail('${post.id}')">
+                    <button class="btn-action primary" style="margin-left: auto;" onclick="viewPostDetail('${post.id}')">
                         <i class="fa-solid fa-circle-info"></i> Xem chi tiết
                     </button>
                 </div>

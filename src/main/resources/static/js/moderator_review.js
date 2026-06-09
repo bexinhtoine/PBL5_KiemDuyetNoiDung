@@ -152,17 +152,27 @@ function renderReviewPostsTable(posts) {
         let scoreBarsHtml = '';
         if (violenScore > 0) {
             scoreBarsHtml += `
-                <div class="review-score-item" style="margin-bottom: 8px;">
-                    <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;"><span>Bạo lực</span><strong>${(violenScore * 100).toFixed(1)}%</strong></div>
-                    <div class="review-score-bar" style="height: 8px; margin-bottom: 0;"><div class="review-score-fill danger" style="width: ${Math.min(100, violenScore * 100)}%;"></div></div>
+                <div class="review-score-item" style="margin-bottom: 12px;">
+                    <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);"><i class="fa-solid fa-hand-fist" style="color: #ff4d4f; width: 16px;"></i> Bạo lực</span>
+                        <strong style="color: var(--text-primary);">${(violenScore * 100).toFixed(1)}%</strong>
+                    </div>
+                    <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                        <div class="review-score-fill danger" style="width: ${Math.min(100, violenScore * 100)}%; height: 100%;"></div>
+                    </div>
                 </div>
             `;
         }
         if (nsfwScore > 0) {
             scoreBarsHtml += `
-                <div class="review-score-item" style="margin-bottom: 8px;">
-                    <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;"><span>Nội dung nhạy cảm</span><strong>${(nsfwScore * 100).toFixed(1)}%</strong></div>
-                    <div class="review-score-bar" style="height: 8px; margin-bottom: 0;"><div class="review-score-fill warning" style="width: ${Math.min(100, nsfwScore * 100)}%;"></div></div>
+                <div class="review-score-item" style="margin-bottom: 12px;">
+                    <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);"><i class="fa-solid fa-eye-slash" style="color: #faad14; width: 16px;"></i> Nội dung nhạy cảm</span>
+                        <strong style="color: var(--text-primary);">${(nsfwScore * 100).toFixed(1)}%</strong>
+                    </div>
+                    <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                        <div class="review-score-fill warning" style="width: ${Math.min(100, nsfwScore * 100)}%; height: 100%;"></div>
+                    </div>
                 </div>
             `;
         }
@@ -170,12 +180,17 @@ function renderReviewPostsTable(posts) {
             const labelColor = contentHateLabelVal === 2 ? '#ff4d4f' : (contentHateLabelVal === 1 ? '#faad14' : '#52c41a');
             const fillClass = contentHateLabelVal === 2 ? 'danger' : (contentHateLabelVal === 1 ? 'warning' : 'success');
             scoreBarsHtml += `
-                <div class="review-score-item" style="margin-bottom: 8px;">
-                    <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;">
-                        <span>Ngôn từ thù ghét (Bài viết) <span style="font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; background: ${labelColor}; color: #fff;">${contentHateLabel}</span></span>
-                        <strong>${(contentHateScore * 100).toFixed(1)}%</strong>
+                <div class="review-score-item" style="margin-bottom: 12px;">
+                    <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+                            <i class="fa-solid fa-comment-slash" style="color: ${labelColor}; width: 16px;"></i> Ngôn từ thù ghét (Bài viết) 
+                            <span style="font-size: 10px; padding: 2px 8px; border-radius: 12px; margin-left: 6px; font-weight: 700; background: ${labelColor}1a; color: ${labelColor}; border: 1px solid ${labelColor}33;">${contentHateLabel}</span>
+                        </span>
+                        <strong style="color: var(--text-primary);">${(contentHateScore * 100).toFixed(1)}%</strong>
                     </div>
-                    <div class="review-score-bar" style="height: 8px; margin-bottom: 0;"><div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, contentHateScore * 100)}%;"></div></div>
+                    <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                        <div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, contentHateScore * 100)}%; height: 100%;"></div>
+                    </div>
                 </div>
             `;
         }
@@ -183,12 +198,17 @@ function renderReviewPostsTable(posts) {
             const labelColor = videoHateLabelVal === 2 ? '#ff4d4f' : (videoHateLabelVal === 1 ? '#faad14' : '#52c41a');
             const fillClass = videoHateLabelVal === 2 ? 'danger' : (videoHateLabelVal === 1 ? 'warning' : 'success');
             scoreBarsHtml += `
-                <div class="review-score-item" style="margin-bottom: 8px;">
-                    <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;">
-                        <span>Ngôn từ thù ghét (Media) <span style="font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; background: ${labelColor}; color: #fff;">${videoHateLabel}</span></span>
-                        <strong>${(videoHateScore * 100).toFixed(1)}%</strong>
+                <div class="review-score-item" style="margin-bottom: 12px;">
+                    <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+                            <i class="fa-solid fa-video-slash" style="color: ${labelColor}; width: 16px;"></i> Ngôn từ thù ghét (Media) 
+                            <span style="font-size: 10px; padding: 2px 8px; border-radius: 12px; margin-left: 6px; font-weight: 700; background: ${labelColor}1a; color: ${labelColor}; border: 1px solid ${labelColor}33;">${videoHateLabel}</span>
+                        </span>
+                        <strong style="color: var(--text-primary);">${(videoHateScore * 100).toFixed(1)}%</strong>
                     </div>
-                    <div class="review-score-bar" style="height: 8px; margin-bottom: 0;"><div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, videoHateScore * 100)}%;"></div></div>
+                    <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                        <div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, videoHateScore * 100)}%; height: 100%;"></div>
+                    </div>
                 </div>
             `;
         }

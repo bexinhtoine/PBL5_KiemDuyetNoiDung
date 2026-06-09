@@ -733,7 +733,7 @@ function renderPosts(posts, token) {
                     <h4 class="post-author">
                         <a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${escapeHtml(post.authorName)}</a>
                     </h4>
-                    <span class="post-time">${timeSince(post.createdAt)}</span>
+                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a></span>
                 </div>
             </div>
             
@@ -746,10 +746,10 @@ function renderPosts(posts, token) {
         `;
 
         if (post.imageUrl) {
-            postHtml += `<div class="post-image-placeholder text-center"><img src="${post.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;"></div>`;
+            postHtml += `<a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-image-link"><div class="post-image-placeholder text-center"><img src="${post.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;"></div></a>`;
         }
         if (post.videoUrl) {
-            postHtml += `<div class="post-video-placeholder text-center"><video src="${post.videoUrl}" controls style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; max-height: 400px; background: #000;"></video></div>`;
+            postHtml += `<a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-video-link"><div class="post-video-placeholder text-center"><video src="${post.videoUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; max-height: 400px; background: #000;"></video></div></a>`;
         }
 
         const likeIcon = post.likedByCurrentUser ? 'fa-solid text-red' : 'fa-regular';
@@ -760,7 +760,7 @@ function renderPosts(posts, token) {
                 <button id="like-btn-${post.id}" class="interaction-btn" onclick="toggleLike(${post.id})" style="${likeStyle}">
                     <i id="like-icon-${post.id}" class="${likeIcon} fa-heart"></i> <span id="like-count-${post.id}">Mọi người (${post.likeCount})</span>
                 </button>
-                <button class="interaction-btn" onclick="location.href='/html/post.html?id=${post.id}'">
+                <button class="interaction-btn" onclick="showPostDetailModal(${post.id})">
                     <i class="fa-regular fa-comment"></i> Bình luận (${post.commentCount})
                 </button>
                 <button id="bookmark-btn-${post.id}" class="interaction-btn" onclick="toggleBookmark(${post.id})" style="margin-left: auto; ${post.bookmarkedByCurrentUser ? 'color: var(--primary-color);' : ''}">

@@ -32,6 +32,7 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 
     long countByCommunityIdAndStatusAndJoinedAtAfter(Long communityId, CommunityMemberStatus status, java.time.LocalDateTime date);
     List<CommunityMember> findByCommunityIdAndStatusAndJoinedAtAfterOrderByJoinedAtAsc(Long communityId, CommunityMemberStatus status, java.time.LocalDateTime date);
+    long countByCommunityIdAndStatus(Long communityId, CommunityMemberStatus status);
 
     @org.springframework.transaction.annotation.Transactional
     void deleteByCommunityId(Long communityId);

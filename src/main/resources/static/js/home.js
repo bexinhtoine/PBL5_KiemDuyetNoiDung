@@ -287,7 +287,7 @@ function prependCreatedPostToFeed(post) {
                 </a>
                 <div class="post-meta">
                     <h4 class="post-author">${authorHtml}</h4>
-                    <span class="post-time"><a href="/html/post.html?id=${post.id}" style="text-decoration:none; color:inherit;">Vừa xong</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
+                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">Vừa xong</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
 
@@ -316,7 +316,7 @@ function prependCreatedPostToFeed(post) {
 
     if (post.imageUrl) {
         postHtml += `
-            <a href="/html/post.html?id=${post.id}" class="post-image-link">
+            <a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-image-link">
                 <div class="post-image-placeholder text-center">
                     <img src="${post.imageUrl}" alt="Post image" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
                 </div>
@@ -326,7 +326,7 @@ function prependCreatedPostToFeed(post) {
 
     if (post.videoUrl) {
         postHtml += `
-            <a href="/html/post.html?id=${post.id}" class="post-video-link">
+            <a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-video-link">
                 <div class="post-video-placeholder text-center">
                     <video src="${post.videoUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; background: #000; max-height: 400px;"></video>
                 </div>
@@ -516,7 +516,7 @@ function renderPosts(posts, token) {
                 </a>
                 <div class="post-meta">
                     <h4 class="post-author">${authorHtml}</h4>
-                    <span class="post-time"><a href="/html/post.html?id=${post.id}" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
+                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
             
@@ -536,7 +536,7 @@ function renderPosts(posts, token) {
 
         if (post.imageUrl) {
             postHtml += `
-            <a href="/html/post.html?id=${post.id}" class="post-image-link">
+            <a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-image-link">
                 <div class="post-image-placeholder text-center">
                     <img src="${post.imageUrl}" alt="Post image" loading="lazy" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
                 </div>
@@ -546,7 +546,7 @@ function renderPosts(posts, token) {
 
         if (post.videoUrl) {
             postHtml += `
-            <a href="/html/post.html?id=${post.id}" class="post-video-link">
+            <a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-video-link">
                 <div class="post-video-placeholder text-center">
                     <video src="${post.videoUrl}" loading="lazy" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; background: #000; max-height: 400px;"></video>
                 </div>
@@ -766,7 +766,7 @@ function renderSearchResults(users, posts, communities, query) {
             html += posts.slice(0, 5).map(post => {
                 const contentSnippet = post.content ? (post.content.length > 60 ? post.content.substring(0, 60) + '...' : post.content) : 'Bài viết không có nội dung';
                 return `
-                    <a href="/html/post.html?id=${post.id}" class="search-result-item">
+                    <a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="search-result-item">
                         <div class="search-post-icon"><i class="fa-regular fa-file-lines"></i></div>
                         <div class="search-item-info">
                             <span class="user-name-result">${contentSnippet}</span>

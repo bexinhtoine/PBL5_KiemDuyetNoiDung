@@ -444,7 +444,7 @@ async function fetchAndRenderReportedContent(isPost, targetObj, postId, reportCa
         return;
     }
 
-    bodyEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang tải nội dung...`;
+    bodyEl.innerHTML = `<div style="padding:16px;display:flex;flex-direction:column;gap:12px;"><div style="display:flex;align-items:center;gap:10px;"><div class="skeleton-box" style="width:36px;height:36px;border-radius:50%;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:30%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div><div class="skeleton-box" style="width:100%;height:12px;"></div><div class="skeleton-box" style="width:85%;height:12px;"></div><div class="skeleton-box" style="width:60%;height:12px;"></div></div>`;
     mediaEl.style.display = 'none';
     mediaEl.innerHTML = '';
     ocrEl.textContent = 'Đang phân tích bằng chứng...';

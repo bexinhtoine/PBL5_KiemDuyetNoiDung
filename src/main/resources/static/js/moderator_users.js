@@ -421,7 +421,7 @@ window.viewUserDetails = async function (userId) {
                                     ${auditHtml}
 
                                     <div class="post-footer" style="padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 25px; color: var(--text-secondary); font-size: 13px; align-items: center;">
-                                        <span title="Lượt thích"><i class="fa-solid fa-thumbs-up" style="color: #3498db;"></i> <strong>${post.likeCount || 0}</strong></span>
+                                        <span title="Lượt thả tim"><i class="fa-solid fa-heart" style="color: #e74c3c;"></i> <strong>${post.likeCount || 0}</strong></span>
                                         <span title="Bình luận"><i class="fa-solid fa-comment" style="color: #00d1b2;"></i> <strong>${post.commentCount || 0}</strong></span>
                                         <button class="btn-action primary" style="margin-left: auto;" onclick="viewPostDetail('${post.id}')">
                                             <i class="fa-solid fa-circle-info"></i> Xem chi tiết

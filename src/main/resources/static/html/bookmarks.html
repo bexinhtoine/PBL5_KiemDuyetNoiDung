@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/home.css">
     <link rel="stylesheet" href="/css/chat.css">
+    <link rel="stylesheet" href="/css/post-detail-modal.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="/js/auth-interceptor.js"></script>
@@ -272,6 +273,7 @@
     <script src="/js/gsap.min.js"></script>
     <script src="/js/animations.js" defer></script>
     <script src="/js/chat.js"></script>
+    <script src="/js/post-detail-modal.js"></script>
     <script>
         window.onload = function() {
             const token = localStorage.getItem('token');
@@ -382,16 +384,16 @@
                         <img src="${post.authorAvatar}" alt="Avatar" class="avatar-medium" onerror="this.src='/uploads/default-avatar.png'">
                         <div class="post-meta">
                             <h4 class="post-author"><a href="/html/profile.html?userId=${post.authorId}" style="text-decoration:none; color:inherit;">${post.authorName}</a></h4>
-                            <span class="post-time"><a href="/html/post.html?id=${post.id}" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> ${visibilityIcon}</span>
+                            <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> ${visibilityIcon}</span>
                         </div>
                     </div>
                     <div class="post-content"><p>${escapeHtml(post.content || '')}</p></div>`;
             
             if (post.imageUrl) {
-                html += `<a href="/html/post.html?id=${post.id}" class="post-image-link"><div class="post-image-placeholder text-center"><img src="${post.imageUrl}" alt="Post image" style="max-width:100%; border-radius:8px; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;"></div></a>`;
+                html += `<a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-image-link"><div class="post-image-placeholder text-center"><img src="${post.imageUrl}" alt="Post image" style="max-width:100%; border-radius:8px; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;"></div></a>`;
             }
             if (post.videoUrl) {
-                html += `<a href="/html/post.html?id=${post.id}" class="post-video-link"><div class="post-video-placeholder text-center"><video src="${post.videoUrl}" style="max-width:100%; border-radius:8px; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto; background:#000; max-height:400px;"></video></div></a>`;
+                html += `<a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-video-link"><div class="post-video-placeholder text-center"><video src="${post.videoUrl}" style="max-width:100%; border-radius:8px; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto; background:#000; max-height:400px;"></video></div></a>`;
             }
 
             const likeIcon = post.likedByCurrentUser ? 'fa-solid text-red' : 'fa-regular';
@@ -402,7 +404,7 @@
                         <button id="like-btn-${post.id}" class="interaction-btn" onclick="toggleLike(${post.id})" style="${likeStyle}">
                             <i id="like-icon-${post.id}" class="${likeIcon} fa-heart"></i> <span id="like-count-${post.id}">Mọi người (${post.likeCount})</span>
                         </button>
-                        <button class="interaction-btn"><i class="fa-regular fa-comment"></i> Bình luận (${post.commentCount})</button>
+                        <button class="interaction-btn" onclick="showPostDetailModal(${post.id})"><i class="fa-regular fa-comment"></i> Bình luận (${post.commentCount})</button>
                         <button id="bookmark-btn-${post.id}" class="interaction-btn" onclick="removeBookmark(${post.id})" style="margin-left: auto; color: var(--primary-color);">
                             <i class="fa-solid fa-bookmark"></i>
                         </button>

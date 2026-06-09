@@ -1487,3 +1487,263 @@ html[data-theme="dark"] .stat-card.filter-card .custom-option.selected {
     background: #ffffff !important;
     color: #000000 !important;
 }
+
+/* ===================================================================
+   COMMUNITY DETAIL TABS & COMPONENT STYLES
+   =================================================================== */
+.comm-tabs-nav {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--border, var(--border-color));
+    margin-bottom: 20px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.comm-tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted, var(--text-secondary));
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    margin-bottom: -2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.comm-tab-btn:hover {
+    color: var(--primary, var(--mod-primary));
+    background: var(--primary-light, var(--mod-primary-light));
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.comm-tab-btn.active {
+    color: var(--primary, var(--mod-primary));
+    border-bottom-color: var(--primary, var(--mod-primary));
+}
+
+.comm-tab-panel {
+    display: none;
+}
+
+.comm-tab-panel.active {
+    display: block;
+    animation: commFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes commFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.comm-post-item {
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border, var(--border-color));
+    background: var(--card-bg, var(--surface-bg));
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.comm-post-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-color: var(--primary, var(--mod-primary));
+}
+
+.comm-member-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border, var(--border-color));
+    transition: background 0.2s;
+}
+.comm-member-row:hover {
+    background: var(--primary-light, var(--mod-primary-light));
+}
+
+.comm-rule-card {
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border, var(--border-color));
+    margin-bottom: 12px;
+    background: var(--card-bg, var(--surface-bg));
+}
+
+.comm-tag-chip {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: var(--primary-light, var(--mod-primary-light));
+    color: var(--text-main, var(--text-primary));
+    border: 1px solid var(--border, var(--border-color));
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.comm-chart-container {
+    position: relative;
+    height: 280px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+/* ===================================================================
+   SKELETON LOADING ANIMATION
+   =================================================================== */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton-box {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--border-color, rgba(255,255,255,0.06));
+    border-radius: 4px;
+}
+
+.skeleton-box::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.04) 20%,
+        rgba(255, 255, 255, 0.08) 60%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.5s infinite;
+    content: '';
+}
+
+[data-theme="light"] .skeleton-box::after,
+body:not([data-theme="dark"]) .skeleton-box::after {
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(0, 0, 0, 0.03) 20%,
+        rgba(0, 0, 0, 0.06) 60%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+[data-theme="light"] .skeleton-box,
+body:not([data-theme="dark"]) .skeleton-box {
+    background-color: #e2e8f0;
+}
+
+.skeleton-post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.skeleton-post-card {
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg, var(--surface-bg));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.skeleton-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.skeleton-title {
+    width: 120px;
+    height: 14px;
+}
+
+.skeleton-meta-line {
+    width: 80px;
+    height: 10px;
+}
+
+.skeleton-content-line {
+    width: 100%;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.skeleton-content-line.short {
+    width: 60%;
+}
+
+.skeleton-content-line.medium {
+    width: 80%;
+}
+
+.skeleton-member-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.skeleton-rule-card {
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg, var(--surface-bg));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton-rule-title {
+    width: 200px;
+    height: 14px;
+}
+
+.skeleton-rule-desc {
+    width: 100%;
+    height: 12px;
+}
+
+.skeleton-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.skeleton-stats-card {
+    background: var(--card-bg, var(--surface-bg));
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton-stats-title {
+    width: 100px;
+    height: 10px;
+}
+
+.skeleton-stats-val {
+    width: 50px;
+    height: 24px;
+}

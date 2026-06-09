@@ -64,6 +64,9 @@ public class CommunityController {
     private com.pbl5.repository.CommunityTagRepository communityTagRepository;
 
     @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+
+    @Autowired
     private com.pbl5.repository.CommunityInvitationRepository communityInvitationRepository;
 
     @PostMapping("/create")
@@ -380,6 +383,13 @@ public class CommunityController {
         return userRepository.findByEmail(email).orElse(null);
     }
 
+    private void populateMemberAndPostCount(CommunityResponse response, Long communityId) {
+        long mCount = communityMemberRepository.countByCommunityIdAndStatus(communityId, com.pbl5.enums.CommunityMemberStatus.ACTIVE);
+        long pCount = postRepository.countByCommunityIdAndStatusIn(communityId, java.util.List.of(com.pbl5.enums.PostStatus.ACTIVE, com.pbl5.enums.PostStatus.PUBLISHED));
+        response.setMemberCount(mCount);
+        response.setPostCount(pCount);
+    }
+
     private CommunityResponse convertToResponse(Community community) {
         return convertToResponse(community, (User) null);
     }
@@ -401,6 +411,7 @@ public class CommunityController {
         if (membershipMap != null && membershipMap.containsKey(community.getId())) {
             response.setMembershipStatus(membershipMap.get(community.getId()));
         }
+        populateMemberAndPostCount(response, community.getId());
         return response;
     }
 
@@ -429,6 +440,7 @@ public class CommunityController {
                         }
                     });
         }
+        populateMemberAndPostCount(response, community.getId());
         return response;
     }
 
@@ -1167,6 +1179,7 @@ public class CommunityController {
             }
 
             communityTagRepository.deleteByCommunityId(id);
+            communityTagRepository.flush(); // Force Hibernate to execute DELETE before running subsequent INSERTs
             for (String name : tagNames) {
                 if (name != null && !name.trim().isEmpty()) {
                     com.pbl5.model.CommunityTag tag = new com.pbl5.model.CommunityTag();
@@ -1181,6 +1194,8 @@ public class CommunityController {
             return ResponseEntity.ok("Cập nhật danh sách tag thành công.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi hệ thống khi cập nhật tag: " + e.getMessage());
         }
     }
 
@@ -1469,11 +1484,14 @@ public class CommunityController {
             Community community = communityService.getCommunityById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cộng đồng."));
 
-            CommunityMember currentMember = communityMemberRepository.findByCommunityIdAndUserId(id, user.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Bạn không phải thành viên của cộng đồng này."));
+            boolean isSysAdminOrMod = user.getRole() == com.pbl5.enums.Role.ADMIN || user.getRole() == com.pbl5.enums.Role.MODERATOR;
+            if (!isSysAdminOrMod) {
+                CommunityMember currentMember = communityMemberRepository.findByCommunityIdAndUserId(id, user.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Bạn không phải thành viên của cộng đồng này."));
 
-            if (currentMember.getRole() != com.pbl5.enums.CommunityRole.OWNER && currentMember.getRole() != com.pbl5.enums.CommunityRole.ADMIN) {
-                return ResponseEntity.status(403).body("Chỉ quản trị viên mới có quyền xem thống kê.");
+                if (currentMember.getRole() != com.pbl5.enums.CommunityRole.OWNER && currentMember.getRole() != com.pbl5.enums.CommunityRole.ADMIN) {
+                    return ResponseEntity.status(403).body("Chỉ quản trị viên mới có quyền xem thống kê.");
+                }
             }
 
             java.time.LocalDateTime sevenDaysAgo = java.time.LocalDateTime.now().minusDays(7);
@@ -1519,6 +1537,22 @@ public class CommunityController {
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/db-debug-tags")
+    public ResponseEntity<?> debugTags() {
+        try {
+            String sql = "SELECT tc.constraint_name, tc.constraint_type, kcu.column_name " +
+                         "FROM information_schema.table_constraints AS tc " +
+                         "JOIN information_schema.key_column_usage AS kcu " +
+                         "  ON tc.constraint_name = kcu.constraint_name " +
+                         "  AND tc.table_schema = kcu.table_schema " +
+                         "WHERE tc.table_name = 'community_tags'";
+            List<?> results = entityManager.createNativeQuery(sql).getResultList();
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi debug DB: " + e.getMessage());
         }
     }
 }

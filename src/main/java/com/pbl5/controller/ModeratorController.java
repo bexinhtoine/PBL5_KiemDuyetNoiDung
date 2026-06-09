@@ -933,6 +933,10 @@ public class ModeratorController {
                 map.put("creatorId", c.getCreator().getId());
                 map.put("creatorName", c.getCreator().getFullName());
             }
+            long mCount = communityMemberRepository.countByCommunityIdAndStatus(c.getId(), com.pbl5.enums.CommunityMemberStatus.ACTIVE);
+            long pCount = postRepository.countByCommunityIdAndStatusIn(c.getId(), List.of(com.pbl5.enums.PostStatus.ACTIVE, com.pbl5.enums.PostStatus.PUBLISHED));
+            map.put("memberCount", mCount);
+            map.put("postCount", pCount);
             return map;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(communities);

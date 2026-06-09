@@ -45,7 +45,21 @@ function handleNotification(notification) {
     toast.style.cssText = "position:fixed; bottom:20px; left:20px; background:#5e6ad2; color:#fff; padding:12px 20px; border-radius:8px; z-index:9999; font-size:14px; box-shadow:0 4px 6px rgba(0,0,0,0.1); cursor:pointer;";
     toast.innerText = notification.message;
     if(notification.link) {
-        toast.onclick = () => window.location.href = notification.link;
+        toast.onclick = (e) => {
+            if (notification.link.includes('post.html?id=')) {
+                e.preventDefault();
+                const match = notification.link.match(/id=(\d+)/);
+                if (match) {
+                    const postId = match[1];
+                    if (typeof showPostDetailModal === 'function') {
+                        showPostDetailModal(postId);
+                        toast.remove();
+                        return;
+                    }
+                }
+            }
+            window.location.href = notification.link;
+        };
     }
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
@@ -354,6 +368,20 @@ function renderNotificationsAndInvitations(notifications, invitations) {
             if (n.type === 'WARNING' || n.type === 'REPORT_WARNING') {
                 e.preventDefault();
                 showWarningModal(n.message);
+            } else if (n.link && n.link.includes('post.html?id=')) {
+                e.preventDefault();
+                const match = n.link.match(/id=(\d+)/);
+                if (match) {
+                    const postId = match[1];
+                    if (notificationDropdownOpen) {
+                        toggleNotificationDropdown();
+                    }
+                    if (typeof showPostDetailModal === 'function') {
+                        showPostDetailModal(postId);
+                    } else {
+                        window.location.href = n.link;
+                    }
+                }
             }
         };
         

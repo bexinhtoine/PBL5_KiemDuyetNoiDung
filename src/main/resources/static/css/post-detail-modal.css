@@ -1,0 +1,349 @@
+/* post-detail-modal.css */
+
+.post-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.post-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.post-modal-card {
+    background: var(--card-bg-solid, #0f1011);
+    border-radius: 16px;
+    width: 640px;
+    max-width: 90%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color-solid, #23252a);
+    box-shadow: var(--card-shadow), 0 20px 60px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.post-modal-overlay.show .post-modal-card {
+    transform: scale(1);
+}
+
+.post-modal-card .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+.post-modal-card .modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main, #f7f8f8);
+    display: flex;
+    align-items: center;
+}
+
+.post-modal-card .modal-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted, #d0d6e0);
+    font-size: 18px;
+    transition: color 0.2s;
+}
+
+.post-modal-card .modal-close-btn:hover {
+    color: var(--text-main, #f7f8f8);
+}
+
+.post-modal-card .modal-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0;
+    background: var(--card-bg-solid, #0f1011);
+}
+
+.post-modal-card .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+.post-modal-card .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+.post-modal-card .modal-body::-webkit-scrollbar-thumb {
+    background: var(--border-color-solid, #23252a);
+    border-radius: 3px;
+}
+
+.post-modal-card .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color-solid, #23252a);
+    background: var(--card-bg-solid, #0f1011);
+}
+
+.post-modal-card .post-author-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+.post-modal-card .post-author-bar .user-avatar-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent-blue, #5e6ad2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    overflow: hidden;
+}
+
+.post-modal-card .post-author-bar .user-avatar-sm img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-modal-card .post-author-bar .user-fullname {
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--text-main, #f7f8f8);
+}
+
+.post-modal-card .post-content-box {
+    padding: 16px 24px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-main, #f7f8f8);
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+.post-modal-card .post-detail-img {
+    width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    display: block;
+    background: #000;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+.post-modal-card .post-stats-bar {
+    display: flex;
+    gap: 24px;
+    padding: 12px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+    color: var(--text-muted, #d0d6e0);
+}
+
+.post-modal-card .post-comments-box {
+    padding: 0 24px 8px;
+}
+
+.post-modal-card .comments-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-muted, #d0d6e0);
+    padding: 14px 0 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.post-modal-card .comment-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-color-solid, #23252a);
+}
+
+.post-modal-card .comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-blue, #5e6ad2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.post-modal-card .comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-modal-card .comment-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.post-modal-card .comment-author {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main, #f7f8f8);
+    margin-right: 8px;
+}
+
+.post-modal-card .comment-time {
+    font-size: 11px;
+    color: var(--text-muted, #d0d6e0);
+}
+
+.post-modal-card .comment-text {
+    font-size: 13px;
+    color: var(--text-main, #f7f8f8);
+    margin-top: 3px;
+    word-break: break-word;
+}
+
+.post-modal-card .no-comments {
+    font-size: 13px;
+    color: var(--text-muted, #d0d6e0);
+    font-style: italic;
+    padding: 16px 0;
+    text-align: center;
+}
+
+/* Comment Input area in modal */
+.post-modal-card .comment-input-area {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color-solid, #23252a);
+    background: var(--card-bg-solid, #0f1011);
+}
+
+.post-modal-card .comment-input-area img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-modal-card .comment-input-wrapper {
+    flex: 1;
+    background: var(--comment-bg, #141516);
+    border: 1px solid var(--border-color-solid, #23252a);
+    border-radius: 20px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+}
+
+.post-modal-card .comment-input-wrapper input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-main, #f7f8f8);
+    font-size: 13.5px;
+}
+
+.post-modal-card .comment-input-wrapper .send-icon {
+    color: var(--accent-blue, #5e6ad2);
+    cursor: pointer;
+    margin-left: 8px;
+    transition: opacity 0.2s;
+}
+
+.post-modal-card .comment-input-wrapper .send-icon:hover {
+    opacity: 0.8;
+}
+
+/* ========== SKELETON LOADING FOR POST MODAL ========== */
+@keyframes modal-skeleton-pulse {
+    0% { background-color: var(--skeleton-bg, rgba(255,255,255,0.05)); }
+    50% { background-color: var(--skeleton-pulse, rgba(255,255,255,0.08)); }
+    100% { background-color: var(--skeleton-bg, rgba(255,255,255,0.05)); }
+}
+
+.post-modal-skeleton {
+    padding: 0;
+}
+
+.post-modal-skeleton .skel-block {
+    background: var(--skeleton-bg, rgba(255,255,255,0.05));
+    animation: modal-skeleton-pulse 1.5s infinite ease-in-out;
+    border-radius: 4px;
+}
+
+.post-modal-skeleton .skel-circle {
+    background: var(--skeleton-bg, rgba(255,255,255,0.05));
+    animation: modal-skeleton-pulse 1.5s infinite ease-in-out;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Author bar skeleton */
+.post-modal-skeleton .skel-author-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+/* Content skeleton */
+.post-modal-skeleton .skel-content {
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+/* Media placeholder skeleton */
+.post-modal-skeleton .skel-media {
+    width: 100%;
+    height: 200px;
+    background: var(--skeleton-bg, rgba(255,255,255,0.05));
+    animation: modal-skeleton-pulse 1.5s infinite ease-in-out;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+/* Stats bar skeleton */
+.post-modal-skeleton .skel-stats {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border-color-solid, #23252a);
+}
+
+/* Comment skeleton */
+.post-modal-skeleton .skel-comment {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-color-solid, #23252a);
+}
+
+.post-modal-skeleton .skel-comments-area {
+    padding: 8px 24px 16px;
+}

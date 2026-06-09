@@ -257,7 +257,7 @@ async function fetchAndDisplayPhotos(userId) {
 
             if (photos.length > 0) {
                 container.innerHTML = photos.map(p => `
-                    <div class="photo-item" onclick="window.location.href = '/html/post.html?id=${p.id}'">
+                    <div class="photo-item" onclick="showPostDetailModal(${p.id})">
                         <img src="${p.imageUrl}" alt="Post photo" onerror="this.parentElement.style.display='none'">
                     </div>
                 `).join('');
@@ -366,9 +366,9 @@ function renderProfilePosts(posts) {
         const isDeleted = status === 'DELETED';
 
         const rejectedHtml = isRejected ? `
-            <div style="background-color: #ffebe9; border: 1px solid #ff8182; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #d1293f; font-weight: 500;">
+            <div style="background-color: #ffebe9; border: 1px solid #ff8182; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #d1293f; font-weight: 500; cursor: pointer;" onclick="showPostDetailModal(${post.id})">
                 <i class="fa-solid fa-triangle-exclamation" style="font-size: 18px;"></i>
-                <span>Bài viết này đã bị gỡ khỏi hệ thống do vi phạm tiêu chuẩn cộng đồng. Chỉ có bạn mới có thể nhìn thấy nội dung này.</span>
+                <span>Bài viết này đã bị gỡ khỏi hệ thống do vi phạm tiêu chuẩn cộng đồng. Chỉ có bạn mới có thể nhìn thấy nội dung này (click để xem chi tiết và kháng nghị).</span>
             </div>
         ` : (isPending ? `
             <div style="background-color: #fff9db; border: 1px solid #fab005; border-radius: 8px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: #f08c00; font-weight: 500;">
@@ -462,7 +462,7 @@ function renderProfilePosts(posts) {
                 </a>
                 <div class="post-meta">
                     <h4 class="post-author">${authorHtml}</h4>
-                    <span class="post-time"><a href="/html/post.html?id=${post.id}" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
+                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
             
@@ -484,7 +484,7 @@ function renderProfilePosts(posts) {
 
         if (post.imageUrl) {
             postHtml += `
-            <a href="/html/post.html?id=${post.id}" class="post-image-link">
+            <a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-image-link">
                 <div class="post-image-placeholder text-center">
                     <img src="${post.imageUrl}" alt="Post image" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
                 </div>
@@ -494,7 +494,7 @@ function renderProfilePosts(posts) {
 
         if (post.videoUrl) {
             postHtml += `
-            <a href="/html/post.html?id=${post.id}" class="post-video-link">
+            <a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" class="post-video-link">
                 <div class="post-video-placeholder text-center">
                     <video src="${post.videoUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; background: #000; max-height: 400px;"></video>
                 </div>

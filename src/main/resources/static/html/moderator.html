@@ -245,30 +245,38 @@
                     <h2>Quản lý bài viết</h2>
                     <p>Quản lý toàn bộ bài viết và xử lý vi phạm.</p>
                 </div>
-                <div class="filter-bar"
-                    style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 250px; position: relative;">
+                <!-- Search + Filter bar: one row, no wrap -->
+                <div class="filter-bar" style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: nowrap;">
+                    <!-- Search: grows to fill space -->
+                    <div style="flex: 1 1 0; min-width: 0; position: relative;">
                         <i class="fa-solid fa-search"
-                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #65676b;"></i>
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #65676b; z-index: 1;"></i>
                         <input type="text" id="manage-search-input"
                             placeholder="Tìm theo ID bài (#P-xxx), ID user hoặc tên..."
                             style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     </div>
 
-                    <select id="manage-type-filter"
-                        style="padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 160px;">
-                        <option value="ALL">Tất cả bài viết</option>
-                        <option value="NORMAL">Bài viết bình thường</option>
-                        <option value="REVIEW">Bài viết kiểm tra</option>
-                    </select>
+                    <!-- Filter group: fixed widths, no shrink -->
+                    <div class="manage-filter-group" style="display: flex; gap: 8px; flex-shrink: 0;">
+                        <select id="manage-source-filter" class="manage-filter-select">
+                            <option value="ALL">Tất cả nguồn</option>
+                            <option value="PERSONAL">Cá nhân</option>
+                            <option value="GROUP">Group</option>
+                        </select>
 
-                    <select id="manage-visibility-filter"
-                        style="padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 160px;">
-                        <option value="ALL">Mọi quyền riêng tư</option>
-                        <option value="PUBLIC">Công khai</option>
-                        <option value="FRIENDS">Bạn bè</option>
-                        <option value="PRIVATE">Chỉ mình tôi</option>
-                    </select>
+                        <select id="manage-type-filter" class="manage-filter-select">
+                            <option value="ALL">Tất cả loại</option>
+                            <option value="NORMAL">Bình thường</option>
+                            <option value="REVIEW">Kiểm tra</option>
+                        </select>
+
+                        <select id="manage-visibility-filter" class="manage-filter-select">
+                            <option value="ALL">Mọi quyền</option>
+                            <option value="PUBLIC">Công khai</option>
+                            <option value="FRIENDS">Bạn bè</option>
+                            <option value="PRIVATE">Riêng tư</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="manage-feed" id="manage-posts-feed">
@@ -283,18 +291,18 @@
                     <p>Danh sách thành viên cần theo dõi và thao tác nhanh.</p>
                 </div>
 
-                <div class="filter-bar" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
-                    <div style="flex: 1; position: relative;">
+                <div class="filter-bar" style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
+                    <div style="flex: 3; position: relative;">
                         <i class="fa-solid fa-search"
                             style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #65676b;"></i>
                         <input type="text" id="users-search-input" placeholder="Tìm kiếm theo ID user hoặc tên user..."
                             style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     </div>
                     <select id="users-role-filter"
-                        style="padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; min-width: 150px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; min-width: 120px; max-width: 160px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <option value="ALL">Tất cả vai trò</option>
-                        <option value="USER">Người dùng (USER)</option>
-                        <option value="MODERATOR">Điều phối viên (MODERATOR)</option>
+                        <option value="USER">USER</option>
+                        <option value="MODERATOR">MODERATOR</option>
                     </select>
                 </div>
                 <div class="card">
@@ -325,13 +333,19 @@
                     <p>Danh sách các nhóm và thao tác quản lý chung.</p>
                 </div>
 
-                <div class="filter-bar" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
-                    <div style="flex: 1; position: relative;">
+                <div class="filter-bar" style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
+                    <div style="flex: 3; position: relative;">
                         <i class="fa-solid fa-search"
                             style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #65676b;"></i>
                         <input type="text" id="communities-search-input" placeholder="Tìm kiếm tên hoặc mô tả cộng đồng..."
                             style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     </div>
+                    <select id="communities-status-filter"
+                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; min-width: 120px; max-width: 160px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0;">
+                        <option value="ALL">Tất cả</option>
+                        <option value="ACTIVE">Hoạt động</option>
+                        <option value="LOCKED">Đã khóa</option>
+                    </select>
                 </div>
                 <div class="card">
                     <table class="mod-table">
@@ -339,6 +353,7 @@
                             <tr>
                                 <th>Cộng đồng</th>
                                 <th>Chế độ</th>
+                                <th>Trạng thái</th>
                                 <th>Ngày tạo</th>
                                 <th>Người tạo</th>
                                 <th>Hành động</th>
@@ -346,7 +361,7 @@
                         </thead>
                         <tbody id="communities-list">
                             <tr>
-                                <td colspan="5" class="table-loading">Đang tải danh sách cộng đồng...</td>
+                                <td colspan="6" class="table-loading">Đang tải danh sách cộng đồng...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1133,6 +1148,76 @@
                 <button type="button" id="note-modal-confirm-btn" class="btn"
                     style="border-radius: 8px; font-weight: 800; padding: 8px 25px; border: none; color: #fff; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-size: 14px; background: #0046a0;">Xác
                     nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lock Community Modal -->
+    <div id="lock-community-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10050; justify-content: center; align-items: center;">
+        <div style="background: var(--surface-bg); width: 480px; max-width: 95vw; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid var(--border-color);">
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--surface-bg);">
+                <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-lock" style="color: #f59e0b;"></i> Khóa tạm thời cộng đồng
+                </h3>
+                <button onclick="closeLockCommunityModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 22px; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            <div style="padding: 24px; background: var(--bg-main);">
+                <input type="hidden" id="lock-community-id">
+                <div id="lock-community-name-display" style="margin-bottom: 20px; padding: 12px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-users" style="color: #f59e0b;"></i>
+                    <span id="lock-community-name-text">---</span>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); font-size: 14px;">Thời hạn khóa:</label>
+                    <select id="lock-community-duration" onchange="toggleCommunityCustomDuration()"
+                        style="width: 100%; padding: 11px 14px; background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                        <option value="12">12 tiếng</option>
+                        <option value="24">24 tiếng (1 ngày)</option>
+                        <option value="72">3 ngày</option>
+                        <option value="168">7 ngày</option>
+                        <option value="custom">Tùy chọn...</option>
+                    </select>
+                </div>
+
+                <div id="lock-community-custom-container" style="display: none; margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); font-size: 14px;">Thời hạn tùy chọn:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="lock-community-custom-value" min="1" placeholder="Ví dụ: 6"
+                            style="flex: 1; padding: 11px 14px; background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                        <select id="lock-community-custom-unit"
+                            style="width: 110px; padding: 11px 14px; background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                            <option value="HOURS">Giờ</option>
+                            <option value="DAYS">Ngày</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); font-size: 14px;">Lý do khóa <span style="color: #ef4444;">(bắt buộc)</span>:</label>
+                    <textarea id="lock-community-reason" placeholder="Nhập lý do khóa cộng đồng... (sẽ gửi thông báo đến tất cả thành viên)"
+                        style="width: 100%; height: 90px; padding: 11px 14px; background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; resize: none; outline: none; font-family: inherit;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="closeLockCommunityModal()" style="padding: 10px 22px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); cursor: pointer; font-size: 14px; font-weight: 600;">Hủy</button>
+                    <button onclick="submitLockCommunity()" style="padding: 10px 22px; border-radius: 8px; border: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; cursor: pointer; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-lock"></i> Xác nhận khóa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Community Detail Modal -->
+    <div id="view-community-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10050; justify-content: center; align-items: center;">
+        <div style="background: var(--surface-bg); width: 850px; max-width: 95vw; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid var(--border-color);">
+            <div style="padding: 18px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--surface-bg);">
+                <h3 style="margin: 0; font-size: 18px; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--mod-primary);"></i> Chi tiết cộng đồng
+                </h3>
+                <button onclick="closeViewCommunityModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 22px; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            <div id="view-community-body" style="padding: 24px; background: var(--bg-main); max-height: 70vh; overflow-y: auto;">
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>
             </div>
         </div>
     </div>

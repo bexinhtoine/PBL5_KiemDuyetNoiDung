@@ -12,5 +12,6 @@ public interface CommunityTagRepository extends JpaRepository<CommunityTag, Long
     List<CommunityTag> findByCommunityIdAndNameIn(Long communityId, List<String> names);
     Optional<CommunityTag> findByCommunityIdAndName(Long communityId, String name);
     boolean existsByCommunityIdAndName(Long communityId, String name);
+    @org.springframework.transaction.annotation.Transactional
     void deleteByCommunityId(Long communityId);
 }

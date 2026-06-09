@@ -106,6 +106,9 @@
                 <a href="#" class="nav-item nav-link" data-page="moderators">
                     <i class="fa-solid fa-shield-halved"></i> Kiểm duyệt viên
                 </a>
+                <a href="#" class="nav-item nav-link" data-page="communities">
+                    <i class="fa-solid fa-people-roof"></i> Cộng đồng
+                </a>
                 <div class="sidebar-section-label"
                     style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; padding: 12px 12px 4px; opacity: 0.65;">
                     Kiểm tra</div>
@@ -621,8 +624,142 @@
                     </div>
                 </div>
             </div>
+            <!-- Page: Communities -->
+            <div class="page hidden" id="page-communities">
+
+                <!-- Title + subtitle (giống Moderator section-title) -->
+                <div style="margin-bottom: 20px;">
+                    <h1 class="page-title">Quản lý cộng đồng</h1>
+                    <p class="page-subtitle">Danh sách các nhóm và thao tác quản lý chung.</p>
+                </div>
+
+                <!-- Filter bar: search icon + input (flex:3) + status dropdown + privacy dropdown -->
+                <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
+                    <!-- Search icon nằm ngoài input, align-items center -->
+                    <div style="display: flex; align-items: center; gap: 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; flex: 3; box-shadow: var(--card-shadow);">
+                        <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted); flex-shrink: 0;"></i>
+                        <input type="text" id="admin-community-search"
+                            placeholder="Tìm kiếm tên hoặc mô tả cộng đồng..."
+                            oninput="adminFilterCommunities()" autocomplete="off" readonly
+                            onfocus="this.removeAttribute('readonly');"
+                            style="border: none; outline: none; background: transparent; font-size: 14px; color: var(--text-main); width: 100%;">
+                    </div>
+                    <!-- Status filter -->
+                    <select id="admin-community-status-filter" onchange="adminFilterCommunities()"
+                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; min-width: 130px; flex-shrink: 0; cursor: pointer; outline: none; box-shadow: var(--card-shadow);">
+                        <option value="ALL">Tất cả</option>
+                        <option value="ACTIVE">Hoạt động</option>
+                        <option value="LOCKED">Đã khóa</option>
+                    </select>
+                    <!-- Privacy filter -->
+                    <select id="admin-community-privacy-filter" onchange="adminFilterCommunities()"
+                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; min-width: 130px; flex-shrink: 0; cursor: pointer; outline: none; box-shadow: var(--card-shadow);">
+                        <option value="ALL">Tất cả chế độ</option>
+                        <option value="PUBLIC">Công khai</option>
+                        <option value="PRIVATE">Riêng tư</option>
+                    </select>
+                    <!-- Refresh -->
+                    <button class="btn-refresh" onclick="adminLoadCommunities()" style="flex-shrink: 0;">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+
+                <!-- Table card: giống .card của Moderator, không có stats cards -->
+                <div class="table-card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cộng đồng</th>
+                                    <th>Chế độ</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Người tạo</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-communities-tbody">
+                                <tr><td colspan="6" class="loading-cell"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Hidden spans để JS updateStats không lỗi -->
+                <span id="admin-comm-stat-total" style="display:none;"></span>
+                <span id="admin-comm-stat-active" style="display:none;"></span>
+                <span id="admin-comm-stat-locked" style="display:none;"></span>
+                <span id="admin-comm-stat-members" style="display:none;"></span>
+                <span id="admin-community-table-count" style="display:none;"></span>
+            </div>
 
         </main>
+    </div>
+
+    <!-- Modal xem chi tiết cộng đồng (Admin) -->
+    <div class="modal-overlay hidden" id="admin-community-detail-modal" style="align-items:center;justify-content:center;">
+        <div class="modal modal-lg" style="max-width:800px;width:100%;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-people-roof" style="color:var(--primary);margin-right:8px;"></i>Chi tiết Cộng đồng</h3>
+                <button class="modal-close" onclick="closeModal('admin-community-detail-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="admin-community-detail-body" style="padding:20px;">
+                <div style="text-align:center;padding:30px;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
+            </div>
+            <div class="modal-footer" id="admin-community-detail-footer">
+                <button class="btn-cancel" onclick="closeModal('admin-community-detail-modal')">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal khóa cộng đồng (Admin) -->
+    <div class="modal-overlay hidden" id="admin-lock-community-modal" style="align-items:center;justify-content:center;">
+        <div class="modal" style="max-width:480px;width:100%;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-lock" style="color:#f59e0b;margin-right:8px;"></i>Khóa tạm thời Cộng đồng</h3>
+                <button class="modal-close" onclick="closeModal('admin-lock-community-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="admin-lock-community-id">
+                <p style="margin-bottom:16px;font-size:14px;color:var(--text-muted);">
+                    Đang khóa: <strong id="admin-lock-community-name" style="color:var(--text-primary);"></strong>
+                </p>
+                <div class="input-group" style="margin-bottom:16px;">
+                    <label style="font-weight:600;margin-bottom:8px;display:block;color:var(--text-primary);">Thời hạn khóa</label>
+                    <select id="admin-lock-community-duration" class="form-input" onchange="adminToggleLockCustomDuration()">
+                        <option value="12">12 tiếng</option>
+                        <option value="24" selected>24 tiếng (1 ngày)</option>
+                        <option value="72">3 ngày</option>
+                        <option value="168">7 ngày</option>
+                        <option value="720">30 ngày</option>
+                        <option value="custom">Tùy chỉnh...</option>
+                    </select>
+                </div>
+                <div id="admin-lock-community-custom-container" style="display:none;margin-bottom:16px;">
+                    <label style="font-weight:600;margin-bottom:8px;display:block;color:var(--text-primary);">Tùy chỉnh thời gian</label>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <input type="number" id="admin-lock-community-custom-value" class="form-input" min="1" placeholder="Số lượng" style="flex:1;">
+                        <select id="admin-lock-community-custom-unit" class="form-input" style="flex:1;">
+                            <option value="HOURS">Tiếng</option>
+                            <option value="DAYS">Ngày</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label style="font-weight:600;margin-bottom:8px;display:block;color:var(--text-primary);">Lý do khóa <span style="color:var(--red);">*</span></label>
+                    <textarea id="admin-lock-community-reason" class="form-input" rows="3" placeholder="Nhập lý do khóa cộng đồng này..." style="resize:none;width:100%;"></textarea>
+                </div>
+                <div style="margin-top:14px;padding:12px;background:rgba(245,158,11,0.08);border-radius:8px;border:1px solid rgba(245,158,11,0.2);">
+                    <p style="margin:0;font-size:13px;color:#d97706;"><i class="fa-solid fa-triangle-exclamation"></i> Khi khóa, tất cả thành viên sẽ nhận được thông báo và không thể đăng bài trong thời gian này.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('admin-lock-community-modal')">Hủy</button>
+                <button class="btn-confirm" style="background:#f59e0b;" onclick="adminSubmitLockCommunity()">
+                    <i class="fa-solid fa-lock"></i> Xác nhận khóa
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal chi tiết bài viết -->

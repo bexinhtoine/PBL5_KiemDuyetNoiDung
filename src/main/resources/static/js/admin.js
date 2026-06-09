@@ -109,6 +109,7 @@ function setupNavigation() {
             if (page === 'stats') loadStats();
             if (page === 'moderators') loadModerators();
             if (page === 'reports') loadReports();
+            if (page === 'communities') adminLoadCommunities();
         });
     });
 }
@@ -360,7 +361,9 @@ async function loadStats() {
 // Hàm này gọi API để lấy cục dữ liệu khổng lồ từ Java Backend
 async function loadUsers() {
     document.getElementById('users-tbody').innerHTML =
-        '<tr><td colspan="5" class="loading-cell"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+        '<tr><td colspan="5" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:40%;height:10px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="5" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:55%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="5" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:60%;height:8px;"></div></div></div></td></tr>';
     try {
         // Gửi request Fetch đến backend
         const res = await fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } });
@@ -665,7 +668,9 @@ let _postSearchTimer = null;
 
 async function loadPosts(page = 0) {
     document.getElementById('posts-tbody').innerHTML =
-        '<tr><td colspan="9" class="loading-cell"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+        '<tr><td colspan="9" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:40%;height:10px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="9" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:55%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="9" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:60%;height:8px;"></div></div></div></td></tr>';
     try {
         const res = await fetch(`/api/admin/posts?page=${page}&size=${POSTS_PAGE_SIZE}`, {
             headers: { 'Authorization': 'Bearer ' + token }
@@ -1201,7 +1206,9 @@ async function openUserDetail(id) {
 async function openLoginHistory(id, name) {
     document.getElementById('history-username').textContent = name;
     document.getElementById('history-tbody').innerHTML =
-        '<tr><td colspan="4" class="loading-cell"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+        '<tr><td colspan="4" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:40%;height:10px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="4" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:55%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="4" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:60%;height:8px;"></div></div></div></td></tr>';
     document.getElementById('login-history-modal').classList.remove('hidden');
 
     try {
@@ -1242,7 +1249,9 @@ function formatGender(g) {
 // ===== DANH SÁCH KIỂM DUYỆT VIÊN =====
 async function loadModerators() {
     document.getElementById('moderators-tbody').innerHTML =
-        '<tr><td colspan="7" class="loading-cell"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:40%;height:10px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:55%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:60%;height:8px;"></div></div></div></td></tr>';
     try {
         const res = await fetch('/api/admin/moderators', { headers: { 'Authorization': 'Bearer ' + token } });
         if (!res.ok) { showToast('Không thể tải danh sách kiểm duyệt viên.', 'error'); return; }
@@ -1473,8 +1482,14 @@ async function loadReports() {
     const postTbody = document.getElementById('reports-post-list');
     const commentTbody = document.getElementById('reports-comment-list');
 
-    if (postTbody) postTbody.innerHTML = '<tr><td colspan="7" class="loading-cell"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
-    if (commentTbody) commentTbody.innerHTML = '<tr><td colspan="7" class="loading-cell"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+    if (postTbody) postTbody.innerHTML =
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:40%;height:10px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:55%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:60%;height:8px;"></div></div></div></td></tr>';
+    if (commentTbody) commentTbody.innerHTML =
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:40%;height:10px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:55%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:60%;height:8px;"></div></div></div></td></tr>';
 
     try {
         const res = await fetch('/api/admin/reports', { headers: { 'Authorization': 'Bearer ' + token } });
@@ -1904,6 +1919,746 @@ function deleteModerator(id, name) {
                 const data = await res.json().catch(() => ({}));
                 if (res.ok) { showToast(`Đã xoá tài khoản ${name}.`, 'success'); loadModerators(); }
                 else showToast(data.message || data || 'Có lỗi xảy ra.', 'error');
+            } catch (e) { showToast('Lỗi kết nối.', 'error'); }
+        },
+        'danger'
+    );
+}
+
+// ===================================================================
+// ADMIN COMMUNITY MANAGEMENT
+// ===================================================================
+let adminAllCommunities = [];
+
+/** Tải danh sách cộng đồng từ API moderator (Admin cũng được dùng endpoint này) */
+async function adminLoadCommunities() {
+    const tbody = document.getElementById('admin-communities-tbody');
+    if (!tbody) return;
+    tbody.innerHTML =
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:40%;height:10px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:55%;height:10px;"></div><div class="skeleton-box" style="width:50%;height:8px;"></div></div></div></td></tr>' +
+        '<tr><td colspan="7" style="padding:0;border:none;"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px;"><div class="skeleton-box" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:60%;height:8px;"></div></div></div></td></tr>';
+
+    try {
+        const res = await fetch('/api/moderator/communities', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        adminAllCommunities = await res.json();
+        adminUpdateCommunityStats(adminAllCommunities);
+        adminFilterCommunities();
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading-cell" style="color:var(--red);">Lỗi khi tải danh sách cộng đồng.</td></tr>';
+        console.error(e);
+    }
+}
+
+function adminUpdateCommunityStats(list) {
+    const locked = list.filter(c => c.locked === true || c.status === 'LOCKED').length;
+    const active = list.length - locked;
+    const totalMembers = list.reduce((s, c) => s + (c.memberCount || 0), 0);
+    document.getElementById('admin-comm-stat-total').textContent = list.length;
+    document.getElementById('admin-comm-stat-active').textContent = active;
+    document.getElementById('admin-comm-stat-locked').textContent = locked;
+    document.getElementById('admin-comm-stat-members').textContent = totalMembers;
+}
+
+function adminFilterCommunities() {
+    const keyword = (document.getElementById('admin-community-search')?.value || '').toLowerCase();
+    const statusVal = document.getElementById('admin-community-status-filter')?.value || 'ALL';
+    const privacyVal = document.getElementById('admin-community-privacy-filter')?.value || 'ALL';
+
+    const filtered = adminAllCommunities.filter(c => {
+        const matchSearch = !keyword ||
+            (c.name && c.name.toLowerCase().includes(keyword)) ||
+            (c.description && c.description.toLowerCase().includes(keyword)) ||
+            (String(c.id) === keyword);
+
+        const isLocked = c.locked === true || c.status === 'LOCKED';
+        const matchStatus = statusVal === 'ALL' ||
+            (statusVal === 'LOCKED' && isLocked) ||
+            (statusVal === 'ACTIVE' && !isLocked);
+
+        const matchPrivacy = privacyVal === 'ALL' || c.privacyStatus === privacyVal;
+
+        return matchSearch && matchStatus && matchPrivacy;
+    });
+
+    adminRenderCommunitiesTable(filtered);
+}
+
+function adminRenderCommunitiesTable(list) {
+    const tbody = document.getElementById('admin-communities-tbody');
+    if (!tbody) return;
+
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading-cell">Không tìm thấy cộng đồng nào.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = list.map(c => {
+        const isLocked = c.locked === true || c.status === 'LOCKED';
+
+        // Status badge — giống Moderator screenshot
+        const statusBadge = isLocked
+            ? '<span class="badge badge-banned"><i class="fa-solid fa-lock"></i> Đã khóa</span>'
+            : '<span class="badge badge-active"><i class="fa-solid fa-circle-check"></i> Hoạt động</span>';
+
+        // Privacy badge — giống Moderator screenshot
+        const privacyBadge = c.privacyStatus === 'PUBLIC'
+            ? '<span class="badge badge-active"><i class="fa-solid fa-globe"></i> Công khai</span>'
+            : '<span class="badge badge-warning"><i class="fa-solid fa-lock"></i> Riêng tư</span>';
+
+        const nameSafe = escapeHtml(c.name || '').replace(/'/g, "\\'");
+        const createdDate = c.createdAt ? new Date(c.createdAt).toLocaleDateString('vi-VN') : '--';
+
+        // Action buttons có text label — giống Moderator screenshot
+        const detailBtn = `<button onclick="adminViewCommunityDetail(${c.id})"
+            style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-main);font-size:12px;font-weight:600;cursor:pointer;">
+            <i class="fa-solid fa-eye"></i> Chi tiết
+        </button>`;
+
+        const lockBtn = isLocked
+            ? `<button onclick="adminUnlockCommunity(${c.id}, '${nameSafe}')"
+                style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:none;background:#22c55e;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">
+                <i class="fa-solid fa-lock-open"></i> Mở khóa
+               </button>`
+            : `<button onclick="adminOpenLockCommunityModal(${c.id}, '${nameSafe}')"
+                style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:none;background:#f59e0b;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">
+                <i class="fa-solid fa-lock"></i> Khóa
+               </button>`;
+
+        const deleteBtn = `<button onclick="adminDeleteCommunity(${c.id}, '${nameSafe}')"
+            style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:none;background:var(--red);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">
+            <i class="fa-solid fa-trash"></i> Xóa
+        </button>`;
+
+        return `
+        <tr>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0;">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;color:var(--text-main);">${escapeHtml(c.name)}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">ID: ${c.id} • ${c.memberCount || 0} thành viên</div>
+                    </div>
+                </div>
+            </td>
+            <td>${privacyBadge}</td>
+            <td>${statusBadge}</td>
+            <td style="font-size:13px;color:var(--text-muted);white-space:nowrap;">${createdDate}</td>
+            <td>
+                <div style="font-size:13px;font-weight:500;color:var(--text-main);">${escapeHtml(c.creatorName || 'Ẩn danh')}</div>
+                <div style="font-size:11px;color:var(--text-muted);">ID: ${c.creatorId}</div>
+            </td>
+            <td>
+                <div style="display:flex;gap:6px;flex-wrap:nowrap;align-items:center;">
+                    ${detailBtn}
+                    ${lockBtn}
+                    ${deleteBtn}
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+// ---------- VIEW DETAIL ----------
+// Global chart reference to avoid reuse errors
+let adminCommunityChartInstance = null;
+
+function adminViewCommunityDetail(communityId) {
+    const community = adminAllCommunities.find(c => c.id === communityId);
+    const modal = document.getElementById('admin-community-detail-modal');
+    const body = document.getElementById('admin-community-detail-body');
+    const footer = document.getElementById('admin-community-detail-footer');
+    if (!modal || !body) return;
+
+    if (!community) {
+        body.innerHTML = '<p style="color:var(--red);padding:20px;">Không tìm thấy thông tin cộng đồng.</p>';
+        modal.classList.remove('hidden');
+        return;
+    }
+
+    // Audit log
+    console.log(`[ADMIN AUDIT] Admin truy cập chi tiết cộng đồng ID=${communityId} (${community.name}) lúc ${new Date().toISOString()}`);
+
+    const isLocked = community.locked === true || community.status === 'LOCKED';
+    const statusBadge = isLocked
+        ? '<span class="badge badge-banned"><i class="fa-solid fa-lock"></i> Đã khóa</span>'
+        : '<span class="badge badge-active"><i class="fa-solid fa-circle-check"></i> Hoạt động</span>';
+
+    body.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            <!-- Header -->
+            <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--bg-main);border-radius:12px;border:1px solid var(--border-color);">
+                <div style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--blue));display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;flex-shrink:0;">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:20px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">${escapeHtml(community.name)}</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        ${statusBadge}
+                        <span class="badge badge-inactive">ID: ${community.id}</span>
+                        <span class="badge badge-active"><i class="fa-solid fa-users"></i> ${community.memberCount || 0} thành viên</span>
+                        ${community.privacyStatus === 'PUBLIC'
+                            ? '<span class="badge badge-active"><i class="fa-solid fa-globe"></i> Công khai</span>'
+                            : '<span class="badge badge-inactive"><i class="fa-solid fa-lock"></i> Riêng tư</span>'
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="comm-tabs-nav">
+                <button class="comm-tab-btn active" data-tab="info" onclick="adminSwitchCommunityTab('info', ${community.id})">Thông tin chung</button>
+                <button class="comm-tab-btn" data-tab="posts" onclick="adminSwitchCommunityTab('posts', ${community.id})">Bài viết</button>
+                <button class="comm-tab-btn" data-tab="members" onclick="adminSwitchCommunityTab('members', ${community.id})">Thành viên</button>
+                <button class="comm-tab-btn" data-tab="rules" onclick="adminSwitchCommunityTab('rules', ${community.id})">Quy tắc</button>
+                <button class="comm-tab-btn" data-tab="topics" onclick="adminSwitchCommunityTab('topics', ${community.id})">Chủ đề</button>
+                <button class="comm-tab-btn" data-tab="stats" onclick="adminSwitchCommunityTab('stats', ${community.id})">Thống kê</button>
+            </div>
+
+            <!-- Tab Panels -->
+            <!-- 1. Info Panel -->
+            <div class="comm-tab-panel active" data-tab="info">
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    <!-- Stats -->
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                        <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;text-align:center;">
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Ngày tạo</div>
+                            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">${community.createdAt ? new Date(community.createdAt).toLocaleDateString('vi-VN') : '--'}</div>
+                        </div>
+                        <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;text-align:center;">
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Tổng bài viết</div>
+                            <div style="font-size:20px;font-weight:800;color:var(--primary);">${community.postCount || 0}</div>
+                        </div>
+                        <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;text-align:center;">
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Chế độ</div>
+                            <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${community.privacyStatus === 'PUBLIC' ? '🌐 Công khai' : '🔒 Riêng tư'}</div>
+                        </div>
+                    </div>
+                    <!-- Creator -->
+                    <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Người tạo</div>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">${(community.creatorName || '?').charAt(0).toUpperCase()}</div>
+                            <div>
+                                <div style="font-weight:700;color:var(--text-primary);">${escapeHtml(community.creatorName || 'Ẩn danh')}</div>
+                                <div style="font-size:12px;color:var(--text-muted);">#UID-${community.creatorId}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ${community.description ? `
+                    <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Mô tả</div>
+                        <div style="font-size:14px;color:var(--text-primary);line-height:1.6;">${escapeHtml(community.description)}</div>
+                    </div>` : ''}
+                    ${isLocked && community.lockReason ? `
+                    <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px;">
+                        <div style="font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;margin-bottom:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Lý do khóa</div>
+                        <div style="font-size:14px;color:var(--text-primary);">${escapeHtml(community.lockReason)}</div>
+                    </div>` : ''}
+                </div>
+            </div>
+
+            <!-- 2. Posts Panel -->
+            <div class="comm-tab-panel" data-tab="posts">
+                <div id="admin-comm-posts-content" style="max-height:400px;overflow-y:auto;padding-right:4px;">
+                    <div class="skeleton-post-list">
+                        <div class="skeleton-post-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box skeleton-title"></div><div class="skeleton-box skeleton-meta-line"></div></div></div><div class="skeleton-box skeleton-content-line"></div><div class="skeleton-box skeleton-content-line medium"></div></div>
+                        <div class="skeleton-post-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box skeleton-title"></div><div class="skeleton-box skeleton-meta-line"></div></div></div><div class="skeleton-box skeleton-content-line"></div><div class="skeleton-box skeleton-content-line short"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Members Panel -->
+            <div class="comm-tab-panel" data-tab="members">
+                <div id="admin-comm-members-content" style="max-height:400px;overflow-y:auto;padding-right:4px;">
+                    <div style="display:flex;flex-direction:column;">
+                        <div class="skeleton-member-row"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;flex:1;"><div class="skeleton-box skeleton-title" style="width:140px;"></div><div class="skeleton-box skeleton-meta-line" style="width:200px;"></div></div><div class="skeleton-box" style="width:60px;height:18px;border-radius:10px;"></div></div>
+                        <div class="skeleton-member-row"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;flex:1;"><div class="skeleton-box skeleton-title" style="width:100px;"></div><div class="skeleton-box skeleton-meta-line" style="width:180px;"></div></div><div class="skeleton-box" style="width:60px;height:18px;border-radius:10px;"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Rules Panel -->
+            <div class="comm-tab-panel" data-tab="rules">
+                <div id="admin-comm-rules-content" style="max-height:400px;overflow-y:auto;padding-right:4px;">
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div class="skeleton-rule-card"><div class="skeleton-box skeleton-rule-title"></div><div class="skeleton-box skeleton-rule-desc"></div></div>
+                        <div class="skeleton-rule-card"><div class="skeleton-box skeleton-rule-title" style="width:150px;"></div><div class="skeleton-box skeleton-rule-desc"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Topics Panel -->
+            <div class="comm-tab-panel" data-tab="topics">
+                <div id="admin-comm-topics-content" style="max-height:400px;overflow-y:auto;padding-right:4px;">
+                    <div style="padding:15px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);display:flex;flex-wrap:wrap;gap:8px;"><div class="skeleton-box" style="width:80px;height:24px;border-radius:12px;"></div><div class="skeleton-box" style="width:100px;height:24px;border-radius:12px;"></div><div class="skeleton-box" style="width:70px;height:24px;border-radius:12px;"></div></div>
+                </div>
+            </div>
+
+            <!-- 6. Statistics Panel -->
+            <div class="comm-tab-panel" data-tab="stats">
+                <div id="admin-comm-stats-content">
+                    <div class="skeleton-stats-grid" style="margin-bottom:20px;"><div class="skeleton-stats-card"><div class="skeleton-box skeleton-stats-title"></div><div class="skeleton-box skeleton-stats-val"></div></div><div class="skeleton-stats-card"><div class="skeleton-box skeleton-stats-title" style="width:80px;"></div><div class="skeleton-box skeleton-stats-val"></div></div><div class="skeleton-stats-card"><div class="skeleton-box skeleton-stats-title" style="width:90px;"></div><div class="skeleton-box skeleton-stats-val"></div></div></div><div style="background:var(--bg-main);border-radius:12px;border:1px solid var(--border-color);padding:16px;height:320px;display:flex;flex-direction:column;gap:12px;"><div class="skeleton-box" style="width:200px;height:14px;"></div><div class="skeleton-box" style="width:100%;flex:1;"></div></div>
+                </div>
+            </div>
+        </div>`;
+
+    // Footer buttons
+    const nameSafe = escapeHtml(community.name || '').replace(/'/g, "\\'");
+    footer.innerHTML = `
+        <button class="btn-cancel" onclick="closeModal('admin-community-detail-modal')">Đóng</button>
+        ${isLocked
+            ? `<button class="btn-confirm" style="background:#22c55e;" onclick="closeModal('admin-community-detail-modal');adminUnlockCommunity(${community.id},'${nameSafe}');"><i class="fa-solid fa-lock-open"></i> Mở khóa</button>`
+            : `<button class="btn-confirm" style="background:#f59e0b;" onclick="closeModal('admin-community-detail-modal');adminOpenLockCommunityModal(${community.id},'${nameSafe}');"><i class="fa-solid fa-lock"></i> Khóa tạm thời</button>`
+        }
+        <button class="btn-confirm" style="background:var(--red);" onclick="closeModal('admin-community-detail-modal');adminDeleteCommunity(${community.id},'${nameSafe}');"><i class="fa-solid fa-trash"></i> Xóa</button>`;
+
+    modal.classList.remove('hidden');
+}
+
+function adminSwitchCommunityTab(tabName, id) {
+    const modal = document.getElementById('admin-community-detail-modal');
+    if (!modal) return;
+    
+    modal.querySelectorAll('.comm-tab-btn').forEach(btn => btn.classList.remove('active'));
+    modal.querySelectorAll('.comm-tab-panel').forEach(panel => panel.classList.remove('active'));
+    
+    const targetBtn = modal.querySelector(`.comm-tab-btn[data-tab="${tabName}"]`);
+    const targetPanel = modal.querySelector(`.comm-tab-panel[data-tab="${tabName}"]`);
+    
+    if (targetBtn) targetBtn.classList.add('active');
+    if (targetPanel) targetPanel.classList.add('active');
+    
+    if (tabName === 'posts') {
+        adminLoadCommunityPostsTab(id);
+    } else if (tabName === 'members') {
+        adminLoadCommunityMembersTab(id);
+    } else if (tabName === 'rules') {
+        adminLoadCommunityRulesTab(id);
+    } else if (tabName === 'topics') {
+        adminLoadCommunityTopicsTab(id);
+    } else if (tabName === 'stats') {
+        adminLoadCommunityStatsTab(id);
+    }
+}
+
+async function adminLoadCommunityPostsTab(id) {
+    const container = document.getElementById('admin-comm-posts-content');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="skeleton-post-list">
+            <div class="skeleton-post-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box skeleton-title"></div><div class="skeleton-box skeleton-meta-line"></div></div></div><div class="skeleton-box skeleton-content-line"></div><div class="skeleton-box skeleton-content-line medium"></div></div>
+            <div class="skeleton-post-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box skeleton-title"></div><div class="skeleton-box skeleton-meta-line"></div></div></div><div class="skeleton-box skeleton-content-line"></div><div class="skeleton-box skeleton-content-line short"></div></div>
+        </div>
+    `;
+    
+    try {
+        const res = await fetch(`/api/communities/${id}/posts`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error();
+        const posts = await res.json();
+        
+        if (!posts || posts.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Không có bài viết nào.</p>';
+            return;
+        }
+        
+        container.innerHTML = posts.map(p => {
+            const authorInit = (p.authorName || '?').charAt(0).toUpperCase();
+            const avatarHtml = p.authorAvatar 
+                ? `<img src="${p.authorAvatar}" style="width:100%;height:100%;object-fit:cover;">` 
+                : authorInit;
+            const hasMedia = p.imageUrl || p.videoUrl;
+            
+            return `
+                <div class="comm-post-item" onclick="closeModal('admin-community-detail-modal'); openPostDetail(${p.id})">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                        <div class="user-avatar-sm">${avatarHtml}</div>
+                        <div>
+                            <div style="font-weight:700;font-size:13px;color:var(--text-primary);">${escapeHtml(p.authorName)}</div>
+                            <div style="font-size:11px;color:var(--text-muted);">${new Date(p.createdAt).toLocaleString('vi-VN')}</div>
+                        </div>
+                        <span class="badge ${p.status === 'ACTIVE' ? 'badge-active' : 'badge-warning'}" style="margin-left:auto;">
+                            ${p.status}
+                        </span>
+                    </div>
+                    <div style="font-size:13px;color:var(--text-primary);margin-bottom:6px;line-height:1.4;word-break:break-word;">
+                        ${escapeHtml(p.content || '(Không có nội dung)')}
+                    </div>
+                    ${hasMedia ? `<div style="font-size:12px;color:var(--blue);font-weight:600;"><i class="fa-solid fa-paperclip"></i> Có đính kèm phương tiện</div>` : ''}
+                    <div style="display:flex;gap:15px;margin-top:8px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border-color);padding-top:6px;">
+                        <span><i class="fa-solid fa-heart"></i> ${p.likeCount || 0}</span>
+                        <span><i class="fa-solid fa-comment"></i> ${p.commentCount || 0}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        container.innerHTML = '<p style="text-align:center;color:var(--red);padding:30px;">Lỗi khi tải danh sách bài viết.</p>';
+    }
+}
+
+async function adminLoadCommunityMembersTab(id) {
+    const container = document.getElementById('admin-comm-members-content');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="display:flex;flex-direction:column;">
+            <div class="skeleton-member-row"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;flex:1;"><div class="skeleton-box skeleton-title" style="width:140px;"></div><div class="skeleton-box skeleton-meta-line" style="width:200px;"></div></div><div class="skeleton-box" style="width:60px;height:18px;border-radius:10px;"></div></div>
+            <div class="skeleton-member-row"><div class="skeleton-box skeleton-avatar"></div><div style="display:flex;flex-direction:column;gap:4px;flex:1;"><div class="skeleton-box skeleton-title" style="width:100px;"></div><div class="skeleton-box skeleton-meta-line" style="width:180px;"></div></div><div class="skeleton-box" style="width:60px;height:18px;border-radius:10px;"></div></div>
+        </div>
+    `;
+    
+    try {
+        const res = await fetch(`/api/communities/${id}/members?status=ACTIVE`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error();
+        const members = await res.json();
+        
+        if (!members || members.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Không có thành viên nào.</p>';
+            return;
+        }
+        
+        container.innerHTML = members.map(m => {
+            const authorInit = (m.fullName || '?').charAt(0).toUpperCase();
+            const avatarHtml = m.avatar 
+                ? `<img src="${m.avatar}" style="width:100%;height:100%;object-fit:cover;">` 
+                : authorInit;
+                
+            let roleBadge = '<span class="badge badge-inactive">MEMBER</span>';
+            if (m.role === 'OWNER') {
+                roleBadge = '<span class="badge badge-admin" style="background:#ea580c;color:#fff;">OWNER</span>';
+            } else if (m.role === 'ADMIN') {
+                roleBadge = '<span class="badge badge-moderator">ADMIN</span>';
+            }
+            
+            return `
+                <div class="comm-member-row" style="cursor:pointer;" onclick="closeModal('admin-community-detail-modal'); openUserDetail(${m.userId})">
+                    <div class="user-avatar-sm">${avatarHtml}</div>
+                    <div>
+                        <div style="font-weight:700;color:var(--text-primary);font-size:14px;">${escapeHtml(m.fullName)}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">ID: ${m.userId} • Tham gia: ${new Date(m.joinedAt).toLocaleDateString('vi-VN')}</div>
+                    </div>
+                    <div style="margin-left:auto;">${roleBadge}</div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        container.innerHTML = '<p style="text-align:center;color:var(--red);padding:30px;">Lỗi khi tải danh sách thành viên.</p>';
+    }
+}
+
+async function adminLoadCommunityRulesTab(id) {
+    const container = document.getElementById('admin-comm-rules-content');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="skeleton-rule-card"><div class="skeleton-box skeleton-rule-title"></div><div class="skeleton-box skeleton-rule-desc"></div></div>
+            <div class="skeleton-rule-card"><div class="skeleton-box skeleton-rule-title" style="width:150px;"></div><div class="skeleton-box skeleton-rule-desc"></div></div>
+        </div>
+    `;
+    
+    try {
+        const res = await fetch(`/api/communities/${id}/rules`);
+        if (!res.ok) throw new Error();
+        const rules = await res.json();
+        
+        if (!rules || rules.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Cộng đồng chưa thiết lập quy tắc nhóm.</p>';
+            return;
+        }
+        
+        container.innerHTML = rules.map(r => `
+            <div class="comm-rule-card">
+                <div style="font-weight:800;font-size:14px;color:var(--text-primary);margin-bottom:6px;">
+                    ${r.ruleOrder}. ${escapeHtml(r.title)}
+                </div>
+                <div style="font-size:13px;color:var(--text-muted);line-height:1.5;">
+                    ${escapeHtml(r.description || '')}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<p style="text-align:center;color:var(--red);padding:30px;">Lỗi khi tải quy tắc nhóm.</p>';
+    }
+}
+
+async function adminLoadCommunityTopicsTab(id) {
+    const container = document.getElementById('admin-comm-topics-content');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="padding:15px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);display:flex;flex-wrap:wrap;gap:8px;"><div class="skeleton-box" style="width:80px;height:24px;border-radius:12px;"></div><div class="skeleton-box" style="width:100px;height:24px;border-radius:12px;"></div><div class="skeleton-box" style="width:70px;height:24px;border-radius:12px;"></div></div>
+    `;
+    
+    try {
+        const res = await fetch(`/api/communities/${id}/tags`);
+        if (!res.ok) throw new Error();
+        const tags = await res.json();
+        
+        if (!tags || tags.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Cộng đồng chưa thiết lập chủ đề/tag.</p>';
+            return;
+        }
+        
+        container.innerHTML = `<div style="padding:15px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);">
+            <div style="font-weight:700;font-size:13px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;">Các chủ đề trong nhóm:</div>
+            <div style="display:flex;flex-wrap:wrap;">
+                ${tags.map(t => `<span class="comm-tag-chip"><i class="fa-solid fa-hashtag"></i> ${escapeHtml(t)}</span>`).join('')}
+            </div>
+        </div>`;
+    } catch (e) {
+        container.innerHTML = '<p style="text-align:center;color:var(--red);padding:30px;">Lỗi khi tải chủ đề nhóm.</p>';
+    }
+}
+
+async function adminLoadCommunityStatsTab(id) {
+    const container = document.getElementById('admin-comm-stats-content');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="skeleton-stats-grid" style="margin-bottom:20px;">
+            <div class="skeleton-stats-card"><div class="skeleton-box skeleton-stats-title"></div><div class="skeleton-box skeleton-stats-val"></div></div>
+            <div class="skeleton-stats-card"><div class="skeleton-box skeleton-stats-title" style="width:80px;"></div><div class="skeleton-box skeleton-stats-val"></div></div>
+            <div class="skeleton-stats-card"><div class="skeleton-box skeleton-stats-title" style="width:90px;"></div><div class="skeleton-box skeleton-stats-val"></div></div>
+        </div>
+        <div style="background:var(--bg-main);border-radius:12px;border:1px solid var(--border-color);padding:16px;height:320px;display:flex;flex-direction:column;gap:12px;">
+            <div class="skeleton-box" style="width:200px;height:14px;"></div>
+            <div class="skeleton-box" style="width:100%;flex:1;"></div>
+        </div>
+    `;
+    
+    try {
+        const res = await fetch(`/api/communities/${id}/analytics`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error();
+        const stats = await res.json();
+        
+        container.innerHTML = `
+            <!-- Analytics Cards -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+                <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;border-left:4px solid var(--blue);">
+                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Thành viên mới (7 ngày)</div>
+                    <div style="font-size:22px;font-weight:800;color:var(--blue);">${stats.newMembersCount}</div>
+                </div>
+                <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;border-left:4px solid var(--purple);">
+                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Bài viết mới (7 ngày)</div>
+                    <div style="font-size:22px;font-weight:800;color:var(--purple);">${stats.newPostsCount}</div>
+                </div>
+                <div style="background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);padding:14px;border-left:4px solid var(--yellow);">
+                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Báo cáo mới (7 ngày)</div>
+                    <div style="font-size:22px;font-weight:800;color:var(--yellow);">${stats.newReportsCount}</div>
+                </div>
+            </div>
+            
+            <!-- Chart Container -->
+            <div style="background:var(--bg-main);border-radius:12px;border:1px solid var(--border-color);padding:16px;">
+                <div style="font-weight:700;font-size:13px;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-chart-line" style="color:var(--blue);"></i> Biểu đồ xu hướng 7 ngày gần nhất
+                </div>
+                <div class="comm-chart-container">
+                    <canvas id="admin-community-stats-chart"></canvas>
+                </div>
+            </div>
+        `;
+        
+        // Render Chart.js
+        setTimeout(() => {
+            const ctx = document.getElementById('admin-community-stats-chart');
+            if (!ctx) return;
+            
+            if (adminCommunityChartInstance) {
+                adminCommunityChartInstance.destroy();
+            }
+            
+            const labels = Object.keys(stats.membersDaily || {});
+            const membersData = Object.values(stats.membersDaily || {});
+            const postsData = Object.values(stats.postsDaily || {});
+            
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+            const textColor = isDark ? '#93939f' : '#616161';
+            
+            adminCommunityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Thành viên mới',
+                            data: membersData,
+                            borderColor: '#1863dc',
+                            backgroundColor: 'rgba(24,99,220,0.05)',
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Bài viết mới',
+                            data: postsData,
+                            borderColor: '#9b60aa',
+                            backgroundColor: 'rgba(155,96,170,0.05)',
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor,
+                                font: { weight: '600', size: 11 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: textColor, font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { 
+                                color: textColor, 
+                                font: { size: 10 },
+                                stepSize: 1,
+                                precision: 0
+                            },
+                            min: 0
+                        }
+                    }
+                }
+            });
+        }, 100);
+        
+    } catch (e) {
+        container.innerHTML = '<p style="text-align:center;color:var(--red);padding:30px;">Lỗi khi tải dữ liệu thống kê.</p>';
+    }
+}
+
+// Bind helper methods globally
+window.adminSwitchCommunityTab = adminSwitchCommunityTab;
+window.adminLoadCommunityPostsTab = adminLoadCommunityPostsTab;
+window.adminLoadCommunityMembersTab = adminLoadCommunityMembersTab;
+window.adminLoadCommunityRulesTab = adminLoadCommunityRulesTab;
+window.adminLoadCommunityTopicsTab = adminLoadCommunityTopicsTab;
+window.adminLoadCommunityStatsTab = adminLoadCommunityStatsTab;
+
+// ---------- LOCK ----------
+function adminOpenLockCommunityModal(communityId, communityName) {
+    document.getElementById('admin-lock-community-id').value = communityId;
+    document.getElementById('admin-lock-community-name').textContent = communityName;
+    document.getElementById('admin-lock-community-duration').value = '24';
+    document.getElementById('admin-lock-community-reason').value = '';
+    document.getElementById('admin-lock-community-custom-container').style.display = 'none';
+    document.getElementById('admin-lock-community-modal').classList.remove('hidden');
+}
+
+function adminToggleLockCustomDuration() {
+    const val = document.getElementById('admin-lock-community-duration').value;
+    document.getElementById('admin-lock-community-custom-container').style.display = val === 'custom' ? 'block' : 'none';
+}
+
+async function adminSubmitLockCommunity() {
+    const communityId = document.getElementById('admin-lock-community-id').value;
+    const reason = document.getElementById('admin-lock-community-reason').value.trim();
+    const durationSelect = document.getElementById('admin-lock-community-duration').value;
+
+    if (!reason) {
+        showAlert('Thiếu thông tin', 'Vui lòng nhập lý do khóa cộng đồng.', 'warning');
+        return;
+    }
+
+    let durationHours;
+    if (durationSelect === 'custom') {
+        const customVal = parseInt(document.getElementById('admin-lock-community-custom-value').value);
+        const unit = document.getElementById('admin-lock-community-custom-unit').value;
+        if (!customVal || customVal < 1) {
+            showAlert('Thiếu thông tin', 'Vui lòng nhập thời hạn hợp lệ.', 'warning');
+            return;
+        }
+        durationHours = unit === 'DAYS' ? customVal * 24 : customVal;
+    } else {
+        durationHours = parseInt(durationSelect);
+    }
+
+    try {
+        const res = await fetch(`/api/moderator/communities/${communityId}/lock`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ durationHours, reason })
+        });
+        if (res.ok) {
+            closeModal('admin-lock-community-modal');
+            showToast(`Đã khóa cộng đồng ${durationHours} tiếng. Thông báo đã được gửi đến thành viên.`, 'success');
+            console.log(`[ADMIN AUDIT] Khóa cộng đồng ID=${communityId}, lý do: ${reason}, thời hạn: ${durationHours}h`);
+            await adminLoadCommunities();
+        } else {
+            const msg = await res.text();
+            showAlert('Lỗi', msg || 'Lỗi khi khóa cộng đồng.', 'danger');
+        }
+    } catch (e) {
+        showToast('Lỗi kết nối.', 'error');
+        console.error(e);
+    }
+}
+
+// ---------- UNLOCK ----------
+function adminUnlockCommunity(communityId, communityName) {
+    showConfirm(
+        '<i class="fa-solid fa-lock-open" style="color:#22c55e;"></i> Mở khóa Cộng đồng',
+        `Bạn có chắc muốn <b>MỞ KHÓA</b> cộng đồng "<strong>${escapeHtml(communityName)}</strong>"? Thành viên sẽ có thể đăng bài và tương tác trở lại.`,
+        async () => {
+            try {
+                const res = await fetch(`/api/moderator/communities/${communityId}/unlock`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    showToast(`Đã mở khóa cộng đồng ${escapeHtml(communityName)}.`, 'success');
+                    console.log(`[ADMIN AUDIT] Mở khóa cộng đồng ID=${communityId}`);
+                    await adminLoadCommunities();
+                } else {
+                    const msg = await res.text();
+                    showAlert('Lỗi', msg || 'Lỗi khi mở khóa.', 'danger');
+                }
+            } catch (e) { showToast('Lỗi kết nối.', 'error'); }
+        },
+        'success'
+    );
+}
+
+// ---------- DELETE ----------
+function adminDeleteCommunity(communityId, communityName) {
+    showConfirm(
+        '<i class="fa-solid fa-trash" style="color:var(--red);"></i> Xóa vĩnh viễn Cộng đồng',
+        `Bạn có chắc chắn muốn <b>XÓA VĨNH VIỄN</b> cộng đồng "<strong>${escapeHtml(communityName)}</strong>"?<br><br>Hành động này sẽ xóa toàn bộ bài viết, giải tán thành viên và <b>gửi thông báo đến tất cả thành viên</b>. <span style="color:var(--red);font-weight:700;">Không thể hoàn tác!</span>`,
+        async () => {
+            try {
+                const res = await fetch(`/api/moderator/communities/${communityId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    showToast(`Đã xóa cộng đồng ${escapeHtml(communityName)}.`, 'success');
+                    console.log(`[ADMIN AUDIT] Xóa cộng đồng ID=${communityId} (${communityName})`);
+                    await adminLoadCommunities();
+                } else {
+                    const msg = await res.text();
+                    showAlert('Lỗi', msg || 'Lỗi khi xóa cộng đồng.', 'danger');
+                }
             } catch (e) { showToast('Lỗi kết nối.', 'error'); }
         },
         'danger'

@@ -16,6 +16,8 @@ public class CommunityResponse {
     private String creatorName;
     private String membershipStatus;
     private String membershipRole;
+    private Long memberCount;
+    private Long postCount;
 
     public CommunityResponse() {}
 
@@ -137,5 +139,21 @@ public class CommunityResponse {
 
     public void setMembershipRole(String membershipRole) {
         this.membershipRole = membershipRole;
+    }
+
+    public Long getMemberCount() {
+        return memberCount;
+    }
+
+    public void setMemberCount(Long memberCount) {
+        this.memberCount = memberCount;
+    }
+
+    public Long getPostCount() {
+        return postCount;
+    }
+
+    public void setPostCount(Long postCount) {
+        this.postCount = postCount;
     }
 }

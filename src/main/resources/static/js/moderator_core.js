@@ -37,52 +37,151 @@ var cache = window.cache;
 var dashboardState = window.dashboardState;
 var currentModerator = window.currentModerator;
 window.showCustomAlert = function (title, message, type = "warning") {
-    const oldPopup = document.getElementById('custom-alert-popup');
-    if (oldPopup) oldPopup.remove();
+    const old = document.getElementById('custom-alert-popup');
+    if (old) old.remove();
 
-    const color = type === "warning" ? "#faad14" : (type === "error" ? "#ff4d4f" : "#52c41a");
-    const icon = type === "warning" ? "fa-triangle-exclamation" : (type === "error" ? "fa-circle-xmark" : "fa-circle-check");
+    const cfg = {
+        success: { color: '#22c55e', bg: 'rgba(34,197,94,0.12)', icon: 'fa-circle-check', label: 'Thành công' },
+        error:   { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',  icon: 'fa-circle-xmark',  label: 'Lỗi' },
+        warning: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: 'fa-triangle-exclamation', label: 'Cảnh báo' },
+        info:    { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', icon: 'fa-circle-info',   label: 'Thông báo' },
+    };
+    const c = cfg[type] || cfg.warning;
 
-    const popupHtml = `
-        <div id="custom-alert-popup" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 999999;">
-            <div style="background: var(--surface-bg); border-radius: 8px; padding: 20px; min-width: 300px; max-width: 400px; text-align: center; box-shadow: var(--card-shadow); color: var(--text-primary); border: 1px solid var(--border-color); border-top: 4px solid ${color};">
-                <i class="fa-solid ${icon}" style="font-size: 40px; color: ${color}; margin-bottom: 15px;"></i>
-                <h3 style="margin: 0 0 10px 0; font-size: 18px;">${title}</h3>
-                <div style="margin: 0 0 20px 0; font-size: 14px; color: var(--text-secondary); line-height: 1.5; text-align: left; max-height: 300px; overflow-y: auto; word-break: break-word;">${message}</div>
-                <button onclick="document.getElementById('custom-alert-popup').remove()" style="background: ${color}; color: ${type === "warning" ? "#000" : "#fff"}; border: none; padding: 8px 24px; border-radius: 4px; font-weight: 600; cursor: pointer;">Đóng</button>
+    const el = document.createElement('div');
+    el.id = 'custom-alert-popup';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:999999;padding:20px;';
+    el.innerHTML = `
+        <div class="mod-dialog-card" role="alertdialog" aria-modal="true" aria-labelledby="cad-title" style="
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+            min-width: 320px; max-width: 440px; width: 100%;
+            overflow: hidden;
+            animation: modDialogIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+        ">
+            <!-- Color bar top -->
+            <div style="height:4px;background:${c.color};"></div>
+            <!-- Body -->
+            <div style="padding:28px 28px 20px;">
+                <!-- Icon + title -->
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+                    <div style="width:48px;height:48px;border-radius:14px;background:${c.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid ${c.icon}" style="font-size:22px;color:${c.color};"></i>
+                    </div>
+                    <h3 id="cad-title" style="margin:0;font-size:17px;font-weight:800;color:var(--text-primary);line-height:1.3;">${title}</h3>
+                </div>
+                <!-- Message -->
+                <div style="font-size:14px;color:var(--text-secondary);line-height:1.65;max-height:260px;overflow-y:auto;word-break:break-word;margin-bottom:24px;">${message}</div>
+                <!-- Button -->
+                <div style="display:flex;justify-content:flex-end;">
+                    <button id="cad-close-btn" style="
+                        background:${c.color};color:#fff;border:none;
+                        padding:10px 28px;border-radius:10px;
+                        font-size:14px;font-weight:700;cursor:pointer;
+                        transition:opacity 0.15s;
+                    " onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">Đóng</button>
+                </div>
             </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', popupHtml);
+        </div>`;
+
+    // Inject keyframe if needed
+    if (!document.getElementById('mod-dialog-styles')) {
+        const s = document.createElement('style');
+        s.id = 'mod-dialog-styles';
+        s.textContent = `
+            @keyframes modDialogIn { from { opacity:0;transform:scale(.88) translateY(16px); } to { opacity:1;transform:scale(1) translateY(0); } }
+            @keyframes modDialogOut { from { opacity:1;transform:scale(1); } to { opacity:0;transform:scale(.92); } }
+        `;
+        document.head.appendChild(s);
+    }
+
+    const closeDialog = () => {
+        const card = el.querySelector('.mod-dialog-card');
+        if (card) card.style.animation = 'modDialogOut 0.18s ease forwards';
+        setTimeout(() => el.remove(), 180);
+    };
+
+    document.body.appendChild(el);
+    el.querySelector('#cad-close-btn').onclick = closeDialog;
+    el.addEventListener('click', e => { if (e.target === el) closeDialog(); });
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') { closeDialog(); document.removeEventListener('keydown', escHandler); }
+    });
 };
 
 window.showCustomConfirm = function (title, message, onConfirm, confirmColor = '#10b981') {
-    const oldPopup = document.getElementById('custom-alert-popup');
-    if (oldPopup) oldPopup.remove();
+    const old = document.getElementById('custom-alert-popup');
+    if (old) old.remove();
 
-    const popupHtml = `
-        <div id="custom-alert-popup" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 999999;">
-            <div style="background: var(--surface-bg); border-radius: 8px; padding: 25px; min-width: 350px; max-width: 450px; text-align: center; box-shadow: var(--card-shadow); color: var(--text-primary); border: 1px solid var(--border-color); border-top: 4px solid ${confirmColor};">
-                <i class="fa-solid fa-circle-question" style="font-size: 45px; color: ${confirmColor}; margin-bottom: 20px;"></i>
-                <h3 style="margin: 0 0 10px 0; font-size: 20px;">${title}</h3>
-                <p style="margin: 0 0 25px 0; font-size: 15px; color: var(--text-secondary); line-height: 1.5;">${message}</p>
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button id="custom-confirm-no" style="background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color); padding: 10px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1;">Hủy bỏ</button>
-                    <button id="custom-confirm-yes" style="background: ${confirmColor}; color: #fff; border: none; padding: 10px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1;">Xác nhận</button>
+    const el = document.createElement('div');
+    el.id = 'custom-alert-popup';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:999999;padding:20px;';
+
+    // Determine icon based on color
+    const isDanger = confirmColor === '#ff4d4f' || confirmColor === '#ef4444';
+    const iconClass = isDanger ? 'fa-triangle-exclamation' : 'fa-circle-question';
+    const iconBg = isDanger ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)';
+
+    el.innerHTML = `
+        <div class="mod-dialog-card" role="dialog" aria-modal="true" aria-labelledby="ccd-title" style="
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+            min-width: 340px; max-width: 480px; width: 100%;
+            overflow: hidden;
+            animation: modDialogIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+        ">
+            <div style="height:4px;background:${confirmColor};"></div>
+            <div style="padding:28px 28px 24px;">
+                <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
+                    <div style="width:48px;height:48px;border-radius:14px;background:${iconBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+                        <i class="fa-solid ${iconClass}" style="font-size:22px;color:${confirmColor};"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <h3 id="ccd-title" style="margin:0 0 10px;font-size:17px;font-weight:800;color:var(--text-primary);line-height:1.3;">${title}</h3>
+                        <div style="font-size:14px;color:var(--text-secondary);line-height:1.65;max-height:240px;overflow-y:auto;word-break:break-word;">${message}</div>
+                    </div>
+                </div>
+                <!-- Divider -->
+                <div style="height:1px;background:var(--border-color);margin:0 -28px 20px;"></div>
+                <!-- Buttons -->
+                <div style="display:flex;gap:10px;justify-content:flex-end;">
+                    <button id="ccd-no" style="
+                        background:var(--bg-main);color:var(--text-secondary);
+                        border:1px solid var(--border-color);
+                        padding:10px 22px;border-radius:10px;
+                        font-size:14px;font-weight:600;cursor:pointer;
+                        transition:all 0.15s;
+                    " onmouseenter="this.style.background='var(--border-color)'" onmouseleave="this.style.background='var(--bg-main)'">Hủy bỏ</button>
+                    <button id="ccd-yes" style="
+                        background:${confirmColor};color:#fff;border:none;
+                        padding:10px 28px;border-radius:10px;
+                        font-size:14px;font-weight:700;cursor:pointer;
+                        transition:opacity 0.15s;box-shadow:0 4px 12px ${confirmColor}55;
+                    " onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">Xác nhận</button>
                 </div>
             </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', popupHtml);
+        </div>`;
 
-    document.getElementById('custom-confirm-yes').onclick = () => {
-        document.getElementById('custom-alert-popup').remove();
-        if (onConfirm) onConfirm();
+    const closeDialog = () => {
+        const card = el.querySelector('.mod-dialog-card');
+        if (card) card.style.animation = 'modDialogOut 0.18s ease forwards';
+        setTimeout(() => el.remove(), 180);
     };
-    document.getElementById('custom-confirm-no').onclick = () => {
-        document.getElementById('custom-alert-popup').remove();
-    };
+
+    document.body.appendChild(el);
+    el.querySelector('#ccd-yes').onclick = () => { closeDialog(); if (onConfirm) onConfirm(); };
+    el.querySelector('#ccd-no').onclick = closeDialog;
+    el.addEventListener('click', e => { if (e.target === el) closeDialog(); });
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') { closeDialog(); document.removeEventListener('keydown', escHandler); }
+    });
 };
+
+
 
 
 window.viewPostDetail = async function (postId) {
@@ -336,7 +435,7 @@ async function fetchPostsData() {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // Tăng lên 30s
     try {
         const reviewFeed = document.getElementById('review-posts-list');
-        if (reviewFeed) reviewFeed.innerHTML = '<div class="review-empty">Đang tải bài viết cần duyệt...</div>';
+        if (reviewFeed) reviewFeed.innerHTML = `<div class="review-card" style="padding:16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-main);"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div class="skeleton-box" style="width:36px;height:36px;border-radius:50%;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:35%;height:10px;"></div><div class="skeleton-box" style="width:20%;height:8px;"></div></div></div><div class="skeleton-box" style="width:100%;height:12px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:75%;height:12px;"></div></div>`.repeat(3);
 
         const feedUrl = `/api/moderator/posts?ts=${Date.now()}`;
         console.log("Đang gọi API", feedUrl);
@@ -695,37 +794,73 @@ async function fetchUserProfile() {
 }
 window.showToast = function (message, type = "info") {
     const toastContainer = document.getElementById('toast-container') || createToastContainer();
-    const color = type === "success" ? "#52c41a" : "#1890ff";
-    const icon = type === "success" ? "fa-circle-check" : "fa-info-circle";
+
+    const cfg = {
+        success: { color: '#22c55e', icon: 'fa-circle-check' },
+        error:   { color: '#ef4444', icon: 'fa-circle-xmark' },
+        danger:  { color: '#ef4444', icon: 'fa-circle-xmark' },
+        warning: { color: '#f59e0b', icon: 'fa-triangle-exclamation' },
+        info:    { color: '#3b82f6', icon: 'fa-circle-info' },
+    };
+    const c = cfg[type] || cfg.info;
 
     const toast = document.createElement('div');
-    toast.style.cssText = `background: #242526; color: #e4e6eb; padding: 12px 20px; border-radius: 8px; margin-top: 10px; border-left: 4px solid ${color}; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; min-width: 250px; animation: slideInLeft 0.3s ease-out;`;
+    // Use CSS vars for bg/text so it works in both light and dark
+    toast.style.cssText = [
+        'background:var(--surface-bg)',
+        'color:var(--text-primary)',
+        'padding:12px 18px',
+        'border-radius:10px',
+        'margin-top:8px',
+        `border-left:4px solid ${c.color}`,
+        'box-shadow:0 4px 20px rgba(0,0,0,0.18)',
+        'display:flex',
+        'align-items:center',
+        'gap:12px',
+        'min-width:260px',
+        'max-width:380px',
+        'animation:toastSlideIn 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+        'border:1px solid var(--border-color)',
+    ].join(';');
+
     toast.innerHTML = `
-        <i class="fa-solid ${icon}" style="color: ${color}; font-size: 18px;"></i>
-        <div style="font-size: 14px;">${message}</div>
+        <div style="width:32px;height:32px;border-radius:8px;background:${c.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fa-solid ${c.icon}" style="color:${c.color};font-size:15px;"></i>
+        </div>
+        <div style="font-size:13.5px;font-weight:500;line-height:1.4;flex:1;">${message}</div>
+        <button onclick="this.closest('[data-toast]').style.animation='toastFadeOut 0.25s ease forwards';setTimeout(()=>this.closest('[data-toast]').remove(),250);"
+            style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;line-height:1;padding:4px;opacity:0.7;flex-shrink:0;">×</button>
     `;
+    toast.setAttribute('data-toast', '1');
 
     toastContainer.appendChild(toast);
     setTimeout(() => {
-        toast.style.animation = 'fadeOut 0.5s ease-out forwards';
-        setTimeout(() => toast.remove(), 500);
-    }, 4000);
+        if (toast.parentNode) {
+            toast.style.animation = 'toastFadeOut 0.35s ease forwards';
+            setTimeout(() => toast.remove(), 350);
+        }
+    }, 4500);
 };
 
 function createToastContainer() {
     const container = document.createElement('div');
     container.id = 'toast-container';
-    container.style.cssText = "position: fixed; bottom: 20px; left: 20px; z-index: 10000; display: flex; flex-direction: column-reverse;";
+    container.style.cssText = 'position:fixed;bottom:24px;left:24px;z-index:10000;display:flex;flex-direction:column-reverse;';
     document.body.appendChild(container);
 
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-    `;
-    document.head.appendChild(style);
+    if (!document.getElementById('toast-anim-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-anim-styles';
+        style.textContent = `
+            @keyframes toastSlideIn { from { transform:translateX(-110%) scale(.9);opacity:0; } to { transform:translateX(0) scale(1);opacity:1; } }
+            @keyframes toastFadeOut { from { opacity:1;transform:translateX(0); } to { opacity:0;transform:translateX(-30px); } }
+        `;
+        document.head.appendChild(style);
+    }
     return container;
 }
+
+
 
 
 
@@ -769,7 +904,7 @@ window.renderPostDetailContent = function (post) {
         const statusText = postStatus === 'REJECTED' ? 'Xử lý: Xóa bài' : (postStatus === 'AUTO_REJECTED' ? 'Xử lý: Hệ thống tự động xóa' : 'Xử lý: Duyệt bài');
 
         statusDiv.innerHTML = `
-            <div style="margin-bottom: 20px; padding: 15px; background: #18191a; border-radius: 10px; border: 2px solid ${statusColor}; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-main); border-radius: 10px; border: 2px solid ${statusColor}; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
                 <div style="font-size: 30px; color: ${statusColor}; display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; background: ${statusBg}; border-radius: 50%;">
                     <i class="fa-solid ${statusIcon}"></i>
                 </div>
@@ -777,13 +912,14 @@ window.renderPostDetailContent = function (post) {
                     <div style="color: ${statusColor}; font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
                         ${statusText}
                     </div>
-                    <div style="display: flex; gap: 20px; font-size: 13px; color: #b0b3b8;">
-                        <span>Moderator: <strong style="color: #e4e6eb;">${escapeHtml(post.reviewerName || 'Hệ thống AI')}</strong></span>
-                        <span>Thời gian: <strong style="color: #e4e6eb;">${post.reviewedAt ? new Date(post.reviewedAt).toLocaleString('vi-VN') : 'Không rõ'}</strong></span>
+                    <div style="display: flex; gap: 20px; font-size: 13px; color: var(--text-secondary);">
+                        <span>Moderator: <strong style="color: var(--text-primary);">${escapeHtml(post.reviewerName || 'Hệ thống AI')}</strong></span>
+                        <span>Thời gian: <strong style="color: var(--text-primary);">${post.reviewedAt ? new Date(post.reviewedAt).toLocaleString('vi-VN') : 'Không rõ'}</strong></span>
                     </div>
                 </div>
             </div>
         `;
+
         statusDiv.style.display = 'block';
     } else if (statusDiv) {
         statusDiv.style.display = 'none';
@@ -923,13 +1059,13 @@ window.renderPostDetailContent = function (post) {
 
     let interactionHtml = `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #3e4042; font-size: 13px; color: #b0b3b8; margin-top: 15px;">
-            <span><i class="fa-solid fa-thumbs-up" style="color: #3498db;"></i> ${likeCount}</span>
+            <span><i class="fa-solid fa-heart" style="color: #e74c3c;"></i> ${likeCount}</span>
             <div>
                 <span>${commentCount} bình luận</span>
             </div>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #3e4042;">
-            <button style="flex: 1; background: transparent; border: none; color: #b0b3b8; padding: 8px; border-radius: 4px; font-weight: 600;"><i class="fa-regular fa-thumbs-up"></i> Thích</button>
+            <button class="mod-like-btn" onclick="if (window.animateHeartBurst) { window.animateHeartBurst(this.querySelector('i')); }" style="flex: 1; background: transparent; border: none; color: #b0b3b8; padding: 8px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: all 0.2s;"><i class="fa-regular fa-heart"></i> Thả tim</button>
             <button style="flex: 1; background: transparent; border: none; color: #b0b3b8; padding: 8px; border-radius: 4px; font-weight: 600;"><i class="fa-regular fa-comment"></i> Bình luận</button>
         </div>
     `;
@@ -969,17 +1105,27 @@ window.renderPostDetailContent = function (post) {
     let scoreBarsHtml = '';
     if (violenScore > 0) {
         scoreBarsHtml += `
-            <div class="review-score-item" style="margin-bottom: 8px;">
-                <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;"><span>Bạo lực</span><strong>${(violenScore * 100).toFixed(1)}%</strong></div>
-                <div class="review-score-bar" style="height: 8px; margin-bottom: 0; background: #3e4042; border-radius: 4px; overflow: hidden;"><div class="review-score-fill danger" style="width: ${Math.min(100, violenScore * 100)}%; height: 100%; background: #ff4d4f;"></div></div>
+            <div class="review-score-item" style="margin-bottom: 12px;">
+                <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);"><i class="fa-solid fa-hand-fist" style="color: #ff4d4f; width: 16px;"></i> Bạo lực</span>
+                    <strong style="color: var(--text-primary);">${(violenScore * 100).toFixed(1)}%</strong>
+                </div>
+                <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                    <div class="review-score-fill danger" style="width: ${Math.min(100, violenScore * 100)}%; height: 100%;"></div>
+                </div>
             </div>
         `;
     }
     if (nsfwScore > 0) {
         scoreBarsHtml += `
-            <div class="review-score-item" style="margin-bottom: 8px;">
-                <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;"><span>Nội dung nhạy cảm</span><strong>${(nsfwScore * 100).toFixed(1)}%</strong></div>
-                <div class="review-score-bar" style="height: 8px; margin-bottom: 0; background: #3e4042; border-radius: 4px; overflow: hidden;"><div class="review-score-fill warning" style="width: ${Math.min(100, nsfwScore * 100)}%; height: 100%; background: #faad14;"></div></div>
+            <div class="review-score-item" style="margin-bottom: 12px;">
+                <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);"><i class="fa-solid fa-eye-slash" style="color: #faad14; width: 16px;"></i> Nội dung nhạy cảm</span>
+                    <strong style="color: var(--text-primary);">${(nsfwScore * 100).toFixed(1)}%</strong>
+                </div>
+                <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                    <div class="review-score-fill warning" style="width: ${Math.min(100, nsfwScore * 100)}%; height: 100%;"></div>
+                </div>
             </div>
         `;
     }
@@ -987,12 +1133,17 @@ window.renderPostDetailContent = function (post) {
         const labelColor = contentHateLabelVal === 2 ? '#ff4d4f' : (contentHateLabelVal === 1 ? '#faad14' : '#52c41a');
         const fillClass = contentHateLabelVal === 2 ? 'danger' : (contentHateLabelVal === 1 ? 'warning' : 'success');
         scoreBarsHtml += `
-            <div class="review-score-item" style="margin-bottom: 8px;">
-                <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;">
-                    <span>Ngôn từ thù ghét (Bài viết) <span style="font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; background: ${labelColor}; color: #fff;">${contentHateLabel}</span></span>
-                    <strong>${(contentHateScore * 100).toFixed(1)}%</strong>
+            <div class="review-score-item" style="margin-bottom: 12px;">
+                <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+                        <i class="fa-solid fa-comment-slash" style="color: ${labelColor}; width: 16px;"></i> Ngôn từ thù ghét (Bài viết) 
+                        <span style="font-size: 10px; padding: 2px 8px; border-radius: 12px; margin-left: 6px; font-weight: 700; background: ${labelColor}1a; color: ${labelColor}; border: 1px solid ${labelColor}33;">${contentHateLabel}</span>
+                    </span>
+                    <strong style="color: var(--text-primary);">${(contentHateScore * 100).toFixed(1)}%</strong>
                 </div>
-                <div class="review-score-bar" style="height: 8px; margin-bottom: 0; background: #3e4042; border-radius: 4px; overflow: hidden;"><div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, contentHateScore * 100)}%; height: 100%;"></div></div>
+                <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                    <div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, contentHateScore * 100)}%; height: 100%;"></div>
+                </div>
             </div>
         `;
     }
@@ -1000,12 +1151,17 @@ window.renderPostDetailContent = function (post) {
         const labelColor = videoHateLabelVal === 2 ? '#ff4d4f' : (videoHateLabelVal === 1 ? '#faad14' : '#52c41a');
         const fillClass = videoHateLabelVal === 2 ? 'danger' : (videoHateLabelVal === 1 ? 'warning' : 'success');
         scoreBarsHtml += `
-            <div class="review-score-item" style="margin-bottom: 8px;">
-                <div class="review-score-header" style="font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;">
-                    <span>Ngôn từ thù ghét (Media) <span style="font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; background: ${labelColor}; color: #fff;">${videoHateLabel}</span></span>
-                    <strong>${(videoHateScore * 100).toFixed(1)}%</strong>
+            <div class="review-score-item" style="margin-bottom: 12px;">
+                <div class="review-score-header" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+                        <i class="fa-solid fa-video-slash" style="color: ${labelColor}; width: 16px;"></i> Ngôn từ thù ghét (Media) 
+                        <span style="font-size: 10px; padding: 2px 8px; border-radius: 12px; margin-left: 6px; font-weight: 700; background: ${labelColor}1a; color: ${labelColor}; border: 1px solid ${labelColor}33;">${videoHateLabel}</span>
+                    </span>
+                    <strong style="color: var(--text-primary);">${(videoHateScore * 100).toFixed(1)}%</strong>
                 </div>
-                <div class="review-score-bar" style="height: 8px; margin-bottom: 0; background: #3e4042; border-radius: 4px; overflow: hidden;"><div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, videoHateScore * 100)}%; height: 100%;"></div></div>
+                <div class="review-score-bar" style="height: 10px; margin-bottom: 0; background: var(--bg-main); border-radius: 999px; overflow: hidden;">
+                    <div class="review-score-fill ${fillClass}" style="width: ${Math.min(100, videoHateScore * 100)}%; height: 100%;"></div>
+                </div>
             </div>
         `;
     }
@@ -1013,7 +1169,14 @@ window.renderPostDetailContent = function (post) {
     const scoresElem = document.getElementById('mod-post-modal-scores');
     if (scoresElem) {
         if (scoreBarsHtml) {
-            scoresElem.innerHTML = `<div style="margin-bottom: 15px; background: #18191a; padding: 15px; border-radius: 8px; border: 1px solid #3e4042; color: #e4e6eb;">${scoreBarsHtml}</div>`;
+            scoresElem.innerHTML = `
+                <div style="margin-bottom: 20px; background: var(--surface-bg); padding: 18px 20px; border-radius: 12px; border: 1px solid var(--border-color); color: var(--text-primary); box-shadow: var(--card-shadow);">
+                    <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-robot" style="color: var(--mod-primary-dark, #00d1b2); font-size: 14px;"></i> Kết quả phân tích từ AI
+                    </div>
+                    ${scoreBarsHtml}
+                </div>
+            `;
         } else {
             scoresElem.innerHTML = '';
         }
@@ -1060,7 +1223,7 @@ window.fetchModComments = async function (postId) {
     if (!container || !list) return;
 
     container.style.display = 'block';
-    list.innerHTML = '<div style="color: var(--text-secondary); font-size: 13px;">Đang tải bình luận...</div>';
+    list.innerHTML = `<div style="display:flex;gap:10px;padding:8px 0;"><div class="skeleton-box" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><div class="skeleton-box" style="width:25%;height:9px;"></div><div class="skeleton-box" style="width:70%;height:8px;"></div></div></div>`.repeat(3);
 
     try {
         const res = await fetch(`/api/posts/${postId}/comments`, {
@@ -1541,7 +1704,7 @@ function openModChat(id, name, avatar) {
     document.getElementById('chat-partner-avatar').src = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=00d1b2&color=fff`;
 
     const body = document.getElementById('chat-messages-body');
-    body.innerHTML = '<div style="text-align:center; color:#b0b3b8; font-size:12px;">Đang tải tin nhắn...</div>';
+    body.innerHTML = `<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;"><div class="skeleton-box" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div><div class="skeleton-box" style="width:120px;height:32px;border-radius:16px 16px 16px 4px;"></div></div><div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><div class="skeleton-box" style="width:150px;height:40px;border-radius:16px 16px 4px 16px;"></div></div><div style="display:flex;gap:8px;align-items:flex-end;"><div class="skeleton-box" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div><div class="skeleton-box" style="width:180px;height:32px;border-radius:16px 16px 16px 4px;"></div></div>`;
 
     fetch(`/api/messages/${id}`, {
         headers: { 'Authorization': `Bearer ${window.token || localStorage.getItem('token')}` }
@@ -1921,74 +2084,6 @@ window.submitLockUser = async function () {
         showCustomAlert('Lỗi kết nối', 'Không thể kết nối đến máy chủ.', 'error');
     }
 };
-
-// ==================== HỆ THỐNG THÔNG BÁO TOAST TOÀN CẦU ====================
-window.showToast = function (message, type = 'info') {
-    let container = document.getElementById('toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        container.style.cssText = 'position: fixed; bottom: 20px; left: 20px; z-index: 100000; display: flex; flex-direction: column; gap: 10px;';
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    const colors = {
-        success: '#2ecc71',
-        danger: '#e74c3c',
-        warning: '#f1c40f',
-        info: '#3498db'
-    };
-    const icons = {
-        success: 'fa-circle-check',
-        danger: 'fa-circle-xmark',
-        warning: 'fa-triangle-exclamation',
-        info: 'fa-circle-info'
-    };
-
-    toast.style.cssText = `
-        background: #242526;
-        color: #e4e6eb;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 250px;
-        border-left: 4px solid ${colors[type] || colors.info};
-        animation: toastIn 0.3s ease;
-        cursor: pointer;
-    `;
-
-    toast.innerHTML = `
-        <i class="fa-solid ${icons[type] || icons.info}" style="color: ${colors[type] || colors.info}; font-size: 18px;"></i>
-        <div style="font-size: 14px; font-weight: 500;">${message}</div>
-    `;
-
-    container.appendChild(toast);
-
-    // Click vào toast để tắt hoặc thực hiện hành động nếu cần
-    toast.onclick = () => {
-        toast.style.animation = 'toastOut 0.3s ease forwards';
-        setTimeout(() => toast.remove(), 300);
-    };
-
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.style.animation = 'toastOut 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-        }
-    }, 5000);
-};
-
-// Thêm style cho animation toast
-const style = document.createElement('style');
-style.innerHTML = `
-    @keyframes toastIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: 0; } }
-`;
-document.head.appendChild(style);
 
 // ==================== KHỞI TẠO VÀ TIÊM MODAL TOÀN CẦU ====================
 async function fetchCurrentModerator() {
