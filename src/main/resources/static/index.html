@@ -174,7 +174,7 @@
                                 <small class="error-msg"></small>
                             </div>
 
-                            <button type="button" class="btn btn-primary full-width" onclick="nextStep(1)">Tiếp
+                            <button type="button" class="btn btn-primary full-width mb-25" onclick="nextStep(1)">Tiếp
                                 tục</button>
                             <p class="switch-form-text" style="margin-top:20px;">
                                 Đã có tài khoản? <a href="javascript:void(0)" onclick="showSection('login-section')"
@@ -260,7 +260,7 @@
                                 <small class="error-msg"></small>
                             </div>
 
-                            <div style="display:flex; gap:10px; margin-top: 15px;">
+                            <div class="mb-25" style="display:flex; gap:10px; margin-top: 15px;">
                                 <button type="button" class="btn btn-outline full-width" onclick="prevStep(2)"
                                     style="flex: 1;">Quay lại</button>
                                 <button type="button" class="btn btn-primary full-width" onclick="nextStep(2)"
@@ -294,7 +294,7 @@
                             </div>
                             <small class="error-msg" style="display:block; margin-bottom:10px;"></small>
 
-                            <div style="display:flex; gap:10px; margin-top: 15px;">
+                            <div class="mb-25" style="display:flex; gap:10px; margin-top: 15px;">
                                 <button type="button" class="btn btn-outline full-width" onclick="prevStep(3)"
                                     style="flex: 1;">Quay lại</button>
                                 <button type="submit" class="btn btn-primary full-width" id="btn-submit-reg"
@@ -324,7 +324,7 @@
 
                         <button type="submit" class="btn btn-primary full-width" style="margin-top:20px;">Xác nhận
                             mã</button>
-                        <button type="button" id="btn-resend-pin" class="btn btn-outline full-width"
+                        <button type="button" id="btn-resend-pin" class="btn btn-outline full-width mb-25"
                             style="margin-top:10px;" onclick="handleResendPin()" disabled>Gửi lại mã (60s)</button>
                         <p class="switch-form-text" style="margin-top:20px;">
                             <a href="javascript:void(0)" onclick="showSection('register-section')" class="bold-link"><i
@@ -342,7 +342,7 @@
                             <label for="forgot-email">Địa chỉ Email</label>
                             <input type="email" id="forgot-email" placeholder="name@gmail.com" required>
                         </div>
-                        <button type="submit" class="btn btn-primary full-width">Gửi yêu cầu</button>
+                        <button type="submit" class="btn btn-primary full-width mb-25">Gửi yêu cầu</button>
                         <p class="switch-form-text" style="margin-top:20px;">
                             <a href="javascript:void(0)" onclick="showSection('login-section')" class="bold-link"><i
                                     class="fa-solid fa-arrow-left"></i> Quay lại đăng nhập</a>
@@ -368,7 +368,7 @@
                                     onclick="togglePassword('new-password', this)"></i>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary full-width">Xác nhận thay đổi</button>
+                        <button type="submit" class="btn btn-primary full-width mb-25">Xác nhận thay đổi</button>
                         <p class="switch-form-text" style="margin-top:20px;">
                             <a href="javascript:void(0)" onclick="showSection('forgot-password-section')"
                                 class="bold-link"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
@@ -394,6 +394,8 @@
         </div>
     </div>
 
+    <script src="/js/gsap.min.js"></script>
+    <script src="/js/animations.js" defer></script>
     <script src="/js/main.js"></script>
 
     <!-- Modal Thông báo Khóa (Ẩn mặc định) -->

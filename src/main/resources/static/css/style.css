@@ -21,6 +21,7 @@
     --rounded-lg: 14px;
     --rounded-xl: 18px;
     --rounded-pill: 9999px;
+    --left-panel-bg-overlay: linear-gradient(135deg, rgba(15, 16, 17, 0.85) 0%, rgba(15, 16, 17, 0.95) 100%);
 }
 
 html[data-theme="light"] {
@@ -39,6 +40,7 @@ html[data-theme="light"] {
     --ink-muted: #65676b;
     --ink-subtle: #8a8f98;
     --ink-tertiary: #bcc0c4;
+    --left-panel-bg-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.95) 100%);
 }
 
 .icon-btn {
@@ -128,7 +130,10 @@ body {
 /* Left Panel */
 .left-panel { 
     flex: 1.1; 
-    background: var(--surface-1); 
+    background-color: var(--surface-1); 
+    background-image: var(--left-panel-bg-overlay), url('/images/cyber_network_bg.png');
+    background-size: cover;
+    background-position: center;
     border-right: 1px solid var(--hairline);
     color: var(--ink); 
     display: flex; 
@@ -335,11 +340,18 @@ body {
     font-size: 14px; 
     font-weight: 500; 
     cursor: pointer; 
-    transition: all 0.2s; 
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
     border: none; 
     text-align: center; 
     font-family: inherit; 
     display: inline-block; 
+}
+.btn:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 8px 20px -8px rgba(94, 106, 210, 0.3);
+}
+.btn:active {
+    transform: translateY(0);
 }
 .full-width { 
     width: 100%; 

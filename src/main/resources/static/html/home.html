@@ -336,28 +336,28 @@
                 </div>
                 
                 <div class="modal-body" style="padding-top: 10px;">
-                    <p style="color: #65676B; font-size: 14px; margin-bottom: 20px;">
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
                         Chào mừng bạn đến với LC Network! Vui lòng cập nhật một số thông tin cơ bản để tiếp tục sử dụng.
                     </p>
 
                     <div style="text-align: left; margin-bottom: 15px;">
-                        <label for="onboard-fullname" style="display: block; font-weight: 600; margin-bottom: 5px; color: #050505;">Tên hiển thị <span style="color:red">*</span></label>
+                        <label for="onboard-fullname" style="display: block; font-weight: 600; margin-bottom: 5px; color: var(--text-main);">Tên hiển thị <span style="color:red">*</span></label>
                         <input type="text" id="onboard-fullname" placeholder="Nhập tên hiển thị" style="width: 100%; padding: 10px; border: 1px solid #ced0d4; border-radius: 6px; box-sizing: border-box; outline: none; font-family: inherit;">
                         <small style="color:red; display:none;" id="onboard-fullname-err"></small>
                     </div>
 
                     <div style="text-align: left; margin-bottom: 15px;">
-                        <label for="onboard-phone" style="display: block; font-weight: 600; margin-bottom: 5px; color: #050505;">Số điện thoại</label>
+                        <label for="onboard-phone" style="display: block; font-weight: 600; margin-bottom: 5px; color: var(--text-main);">Số điện thoại</label>
                         <input type="text" id="onboard-phone" placeholder="Nhập số điện thoại" style="width: 100%; padding: 10px; border: 1px solid #ced0d4; border-radius: 6px; box-sizing: border-box; outline: none; font-family: inherit;">
                     </div>
 
                     <div style="text-align: left; margin-bottom: 15px;">
-                        <label for="onboard-dob" style="display: block; font-weight: 600; margin-bottom: 5px; color: #050505;">Ngày sinh</label>
+                        <label for="onboard-dob" style="display: block; font-weight: 600; margin-bottom: 5px; color: var(--text-main);">Ngày sinh</label>
                         <input type="date" id="onboard-dob" max="2015-12-31" style="width: 100%; padding: 10px; border: 1px solid #ced0d4; border-radius: 6px; box-sizing: border-box; outline: none; font-family: inherit;">
                     </div>
 
                     <div style="text-align: left; margin-bottom: 20px;">
-                        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #050505;">Giới tính</label>
+                        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: var(--text-main);">Giới tính</label>
                         <div style="display: flex; gap: 15px;">
                             <label><input type="radio" name="onboard-gender" value="Nam" checked> Nam</label>
                             <label><input type="radio" name="onboard-gender" value="Nữ"> Nữ</label>
@@ -408,7 +408,7 @@
                 <button class="close-modal" onclick="closeReportModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <p style="color: #65676b; margin-bottom: 15px; font-size: 14px;">Tại sao bạn muốn báo cáo nội dung này?</p>
+                <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;">Tại sao bạn muốn báo cáo nội dung này?</p>
                 <select id="report-category" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none;">
                     <option value="SPAM">Spam / Nội dung rác</option>
                     <option value="VIOLENCE">Bạo lực</option>

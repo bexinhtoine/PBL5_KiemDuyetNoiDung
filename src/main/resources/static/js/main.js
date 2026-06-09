@@ -1,20 +1,119 @@
 const API_URL = '/api/auth';
 
-function showSection(sectionId) {
-    document.querySelectorAll('.form-section').forEach(sec => {
-        sec.classList.add('hidden');
-    });
-    document.getElementById(sectionId).classList.remove('hidden');
-    hideNotification();
+function getAnimatableElements(section) {
+    if (!section) return [];
+    
+    // If it's the register section, only animate the title/subtitle and the current active step's children
+    if (section.id === 'register-section') {
+        const activeStep = section.querySelector('form > div:not(.hidden)');
+        if (activeStep) {
+            return [
+                section.querySelector('h2'),
+                section.querySelector('.subtitle') || section.querySelector('#reg-subtitle'),
+                ...activeStep.children
+            ].filter(el => el && !el.classList.contains('hidden'));
+        }
+    }
+    
+    // Otherwise, check if it contains a form. If so, animate title, subtitle, and form children
+    const form = section.querySelector('form');
+    if (form) {
+        return [
+            section.querySelector('h2'),
+            section.querySelector('.subtitle'),
+            ...form.children
+        ].filter(el => el && !el.classList.contains('hidden'));
+    }
+    
+    // Default fallback
+    return Array.from(section.children).filter(el => el && !el.classList.contains('hidden'));
+}
 
+function showSection(sectionId) {
+    const activeSec = document.querySelector('.form-section:not(.hidden)');
+    const targetSec = document.getElementById(sectionId);
+    
     // Update Top Right Navigation dynamically
     const navRight = document.getElementById('nav-right-actions');
-    if (sectionId === 'login-section') {
-        navRight.innerHTML = `<span>Bạn là người mới?</span> <button class="btn btn-outline" onclick="showSection('register-section')">Đăng ký</button>`;
-    } else if (sectionId === 'register-section') {
-        navRight.innerHTML = `<span>Đã có tài khoản?</span> <button class="btn btn-outline" onclick="showSection('login-section')">Đăng nhập</button>`;
+    if (navRight) {
+        let actionsHtml = '';
+        if (sectionId === 'login-section') {
+            actionsHtml = `<span>Bạn là người mới?</span> <button class="btn btn-outline" onclick="showSection('register-section')">Đăng ký</button>`;
+        } else if (sectionId === 'register-section') {
+            actionsHtml = `<span>Đã có tài khoản?</span> <button class="btn btn-outline" onclick="showSection('login-section')">Đăng nhập</button>`;
+        } else {
+            actionsHtml = `<button class="btn btn-outline" onclick="showSection('login-section')">Quay lại</button>`;
+        }
+        
+        navRight.innerHTML = `
+            ${actionsHtml}
+            <button class="icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Chuyển chế độ tối/sáng">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        `;
+        
+        if (typeof window.updateThemeToggleIcons === 'function') {
+            window.updateThemeToggleIcons();
+        }
+    }
+
+    hideNotification();
+
+    if (activeSec && activeSec !== targetSec && typeof gsap !== 'undefined') {
+        const activeElements = getAnimatableElements(activeSec);
+        
+        // Slide out elements of active section to the right
+        gsap.to(activeElements, {
+            x: 50,
+            opacity: 0,
+            duration: 0.25,
+            stagger: 0.02,
+            ease: 'power2.in',
+            onComplete: () => {
+                // Hide the old section
+                activeSec.classList.add('hidden');
+                // Reset GSAP styles
+                gsap.set(activeElements, { clearProps: 'all' });
+                
+                // Show the target section
+                targetSec.classList.remove('hidden');
+                const incomingElements = getAnimatableElements(targetSec);
+                
+                // Slide in elements of incoming section from left to right
+                gsap.fromTo(incomingElements,
+                    { x: -50, opacity: 0 },
+                    {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.45,
+                        stagger: 0.03,
+                        ease: 'power2.out',
+                        clearProps: 'transform,opacity'
+                    }
+                );
+            }
+        });
     } else {
-        navRight.innerHTML = `<button class="btn btn-outline" onclick="showSection('login-section')">Quay lại</button>`;
+        // Fallback for initial load or if GSAP is not defined
+        document.querySelectorAll('.form-section').forEach(sec => {
+            sec.classList.add('hidden');
+        });
+        targetSec.classList.remove('hidden');
+        
+        if (typeof gsap !== 'undefined') {
+            const incomingElements = getAnimatableElements(targetSec);
+            gsap.fromTo(incomingElements,
+                { x: -50, opacity: 0 },
+                {
+                    x: 0,
+                    opacity: 1,
+                    duration: 0.45,
+                    stagger: 0.03,
+                    ease: 'power2.out',
+                    clearProps: 'transform,opacity'
+                }
+            );
+        }
     }
 }
 
@@ -136,17 +235,83 @@ window.nextStep = function(currentStep) {
     
     if (!isValid) return;
 
-    document.getElementById(`reg-step-${currentStep}`).classList.add('hidden');
-    document.getElementById(`reg-step-${currentStep + 1}`).classList.remove('hidden');
-    if (currentStep === 1) document.getElementById('reg-subtitle').innerText = 'Bước 2: Thông tin cá nhân';
-    if (currentStep === 2) document.getElementById('reg-subtitle').innerText = 'Bước 3: Xác nhận điều khoản';
+    const currentStepEl = document.getElementById(`reg-step-${currentStep}`);
+    const nextStepEl = document.getElementById(`reg-step-${currentStep + 1}`);
+
+    if (currentStepEl && nextStepEl && typeof gsap !== 'undefined') {
+        gsap.to(currentStepEl.children, {
+            x: 50,
+            opacity: 0,
+            duration: 0.25,
+            stagger: 0.02,
+            ease: 'power2.in',
+            onComplete: () => {
+                currentStepEl.classList.add('hidden');
+                gsap.set(currentStepEl.children, { clearProps: 'all' });
+                
+                nextStepEl.classList.remove('hidden');
+                if (currentStep === 1) document.getElementById('reg-subtitle').innerText = 'Bước 2: Thông tin cá nhân';
+                if (currentStep === 2) document.getElementById('reg-subtitle').innerText = 'Bước 3: Xác nhận điều khoản';
+                
+                gsap.fromTo(nextStepEl.children,
+                    { x: -50, opacity: 0 },
+                    {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.45,
+                        stagger: 0.03,
+                        ease: 'power2.out',
+                        clearProps: 'transform,opacity'
+                    }
+                );
+            }
+        });
+    } else {
+        if (currentStepEl) currentStepEl.classList.add('hidden');
+        if (nextStepEl) nextStepEl.classList.remove('hidden');
+        if (currentStep === 1) document.getElementById('reg-subtitle').innerText = 'Bước 2: Thông tin cá nhân';
+        if (currentStep === 2) document.getElementById('reg-subtitle').innerText = 'Bước 3: Xác nhận điều khoản';
+    }
 }
 
 window.prevStep = function(currentStep) {
-    document.getElementById(`reg-step-${currentStep}`).classList.add('hidden');
-    document.getElementById(`reg-step-${currentStep - 1}`).classList.remove('hidden');
-    if (currentStep === 2) document.getElementById('reg-subtitle').innerText = 'Bước 1: Thông tin cơ bản';
-    if (currentStep === 3) document.getElementById('reg-subtitle').innerText = 'Bước 2: Thông tin cá nhân';
+    const currentStepEl = document.getElementById(`reg-step-${currentStep}`);
+    const prevStepEl = document.getElementById(`reg-step-${currentStep - 1}`);
+
+    if (currentStepEl && prevStepEl && typeof gsap !== 'undefined') {
+        gsap.to(currentStepEl.children, {
+            x: 50,
+            opacity: 0,
+            duration: 0.25,
+            stagger: 0.02,
+            ease: 'power2.in',
+            onComplete: () => {
+                currentStepEl.classList.add('hidden');
+                gsap.set(currentStepEl.children, { clearProps: 'all' });
+                
+                prevStepEl.classList.remove('hidden');
+                if (currentStep === 2) document.getElementById('reg-subtitle').innerText = 'Bước 1: Thông tin cơ bản';
+                if (currentStep === 3) document.getElementById('reg-subtitle').innerText = 'Bước 2: Thông tin cá nhân';
+                
+                gsap.fromTo(prevStepEl.children,
+                    { x: -50, opacity: 0 },
+                    {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.45,
+                        stagger: 0.03,
+                        ease: 'power2.out',
+                        clearProps: 'transform,opacity'
+                    }
+                );
+            }
+        });
+    } else {
+        if (currentStepEl) currentStepEl.classList.add('hidden');
+        if (prevStepEl) prevStepEl.classList.remove('hidden');
+        if (currentStep === 2) document.getElementById('reg-subtitle').innerText = 'Bước 1: Thông tin cơ bản';
+        if (currentStep === 3) document.getElementById('reg-subtitle').innerText = 'Bước 2: Thông tin cá nhân';
+    }
 }
 
 window.uploadRegisterAvatar = async function(event) {
@@ -407,6 +572,26 @@ window.logout = function() {
 };
 
 window.onload = async () => {
+    // Left branding panel premium entrance animations
+    if (typeof gsap !== 'undefined') {
+        gsap.from(".left-content > *", {
+            y: 30,
+            opacity: 0,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: "power3.out"
+        });
+        
+        gsap.from(".stat-item", {
+            y: 20,
+            opacity: 0,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: "power2.out",
+            delay: 0.4
+        });
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     
     if (urlParams.has('code')) {

@@ -1071,6 +1071,10 @@ html[data-theme="dark"] .card:hover {
 .interaction-btn:hover {
     background: var(--primary-light);
     color: var(--primary-color);
+    transform: scale(1.03);
+}
+.interaction-btn:active {
+    transform: scale(0.97);
 }
 
 /* Right Sidebar */
@@ -1850,6 +1854,48 @@ html[data-theme="dark"] .search-results-dropdown::-webkit-scrollbar-thumb:hover 
 html[data-theme="dark"] .custom-option.selected {
     background: #ffffff;
     color: #000000 !important;
+}
+
+/* Global button styles for modals and pages (e.g. Report Modal) */
+.btn {
+    padding: 10px 18px;
+    border-radius: var(--rounded-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border: none;
+    text-align: center;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.btn-primary {
+    background-color: var(--primary-color);
+    color: #ffffff !important;
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1.5px);
+    box-shadow: 0 8px 20px -8px rgba(94, 106, 210, 0.3);
+}
+.btn-primary:active {
+    transform: translateY(0);
+}
+.btn-secondary {
+    background-color: var(--button-bg);
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+    background-color: var(--button-hover);
+    border-color: var(--text-muted);
+    transform: translateY(-1.5px);
+}
+.btn-secondary:active {
+    transform: translateY(0);
 }
 
 
