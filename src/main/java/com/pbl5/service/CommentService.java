@@ -44,7 +44,8 @@ public class CommentService {
 
     public List<CommentResponse> getComments(Long postId, User currentUser) {
         List<Comment> allComments = commentRepository.findByPostIdOrderByCreatedAtDesc(postId);
-        if (allComments.isEmpty()) return new ArrayList<>();
+        if (allComments.isEmpty())
+            return new ArrayList<>();
 
         List<Long> commentIds = allComments.stream().map(Comment::getId).collect(Collectors.toList());
 
@@ -64,7 +65,8 @@ public class CommentService {
         for (Comment c : allComments) {
             String authorName = c.getUser().getFullName() != null ? c.getUser().getFullName() : "Người dùng";
             String authorAvatar = c.getUser().getAvatar() != null ? c.getUser().getAvatar()
-                    : "https://ui-avatars.com/api/?name=" + authorName.replace(" ", "+") + "&background=00d1b2&color=fff";
+                    : "https://ui-avatars.com/api/?name=" + authorName.replace(" ", "+")
+                            + "&background=5e6ad2&color=fff";
             boolean isMine = currentUser != null && c.getUser().getId().equals(currentUser.getId());
 
             CommentResponse resp = new CommentResponse(
@@ -94,14 +96,17 @@ public class CommentService {
 
     @Transactional
     public CommentResponse addComment(Long postId, CommentRequest request, User user) throws Exception {
-        if (user.getCommentWarningExpiresAt() != null && user.getCommentWarningExpiresAt().isAfter(LocalDateTime.now())) {
-            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm 'ngày' dd/MM/yyyy");
+        if (user.getCommentWarningExpiresAt() != null
+                && user.getCommentWarningExpiresAt().isAfter(LocalDateTime.now())) {
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
+                    .ofPattern("HH:mm 'ngày' dd/MM/yyyy");
             String expiryStr = user.getCommentWarningExpiresAt().format(formatter);
             throw new Exception("Bạn đang bị cấm bình luận do vi phạm. Vui lòng quay lại sau " + expiryStr);
         }
 
         Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) throw new Exception("Không tìm thấy bài viết");
+        if (postOpt.isEmpty())
+            throw new Exception("Không tìm thấy bài viết");
 
         if ((request.getContent() == null || request.getContent().trim().isEmpty()) &&
                 (request.getImageUrl() == null || request.getImageUrl().trim().isEmpty()) &&
@@ -137,7 +142,7 @@ public class CommentService {
 
         String authorName = user.getFullName() != null ? user.getFullName() : "Người dùng";
         String authorAvatar = user.getAvatar() != null ? user.getAvatar()
-                : "https://ui-avatars.com/api/?name=" + authorName.replace(" ", "+") + "&background=00d1b2&color=fff";
+                : "https://ui-avatars.com/api/?name=" + authorName.replace(" ", "+") + "&background=5e6ad2&color=fff";
 
         return new CommentResponse(
                 comment.getId(), comment.getContent(), user.getId(), authorName, authorAvatar,
@@ -147,7 +152,8 @@ public class CommentService {
     @Transactional
     public void deleteComment(Long commentId, User user) throws Exception {
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
-        if (commentOpt.isEmpty()) throw new Exception("Không tìm thấy bình luận");
+        if (commentOpt.isEmpty())
+            throw new Exception("Không tìm thấy bình luận");
 
         Comment comment = commentOpt.get();
         boolean isAuthor = comment.getUser().getId().equals(user.getId());
@@ -162,7 +168,8 @@ public class CommentService {
     @Transactional
     public void updateComment(Long commentId, CommentRequest request, User user) throws Exception {
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
-        if (commentOpt.isEmpty()) throw new Exception("Không tìm thấy bình luận");
+        if (commentOpt.isEmpty())
+            throw new Exception("Không tìm thấy bình luận");
 
         Comment comment = commentOpt.get();
         if (!comment.getUser().getId().equals(user.getId())) {
@@ -188,7 +195,8 @@ public class CommentService {
     @Transactional
     public Map<String, Object> toggleLikeComment(Long commentId, User user) throws Exception {
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
-        if (commentOpt.isEmpty()) throw new Exception("Không tìm thấy bình luận");
+        if (commentOpt.isEmpty())
+            throw new Exception("Không tìm thấy bình luận");
 
         Comment comment = commentOpt.get();
         Optional<CommentLike> existingLike = commentLikeRepository.findByCommentAndUser(comment, user);
@@ -215,7 +223,8 @@ public class CommentService {
     @Transactional
     public void reportComment(Long commentId, String reason, String categoryStr, User user) throws Exception {
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
-        if (commentOpt.isEmpty()) throw new Exception("Không tìm thấy bình luận");
+        if (commentOpt.isEmpty())
+            throw new Exception("Không tìm thấy bình luận");
 
         Comment comment = commentOpt.get();
         if (reportRepository.existsByUserAndComment(user, comment)) {
@@ -230,7 +239,8 @@ public class CommentService {
         if (categoryStr != null) {
             try {
                 category = com.pbl5.enums.ReportCategory.valueOf(categoryStr.toUpperCase());
-            } catch (IllegalArgumentException ignored) {}
+            } catch (IllegalArgumentException ignored) {
+            }
         }
 
         Report report = new Report();

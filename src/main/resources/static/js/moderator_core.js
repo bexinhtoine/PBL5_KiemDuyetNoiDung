@@ -618,7 +618,7 @@ function populateProfileModal() {
     const bio = document.getElementById('profile-bio');
     const rel = document.getElementById('profile-relationshipStatus');
 
-    if (avatar) avatar.src = currentModerator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentModerator.fullName || 'Moderator')}&background=00d1b2&color=fff`;
+    if (avatar) avatar.src = currentModerator.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentModerator.fullName || 'Moderator')}&background=5e6ad2&color=fff`;
     if (fullName) fullName.value = currentModerator.fullName || '';
     if (phone) phone.value = currentModerator.phoneNumber || '';
     if (dob) dob.value = currentModerator.dateOfBirth ? String(currentModerator.dateOfBirth).slice(0, 10) : '';
@@ -716,6 +716,43 @@ async function updateAvatarFromFile(file) {
     }
 }
 
+async function updateAvatarFromUrl(url) {
+    if (!url || !url.trim()) {
+        window.showCustomAlert('Lỗi', 'Vui lòng nhập URL hợp lệ.', 'warning');
+        return;
+    }
+    try {
+        const avatarRes = await fetch('/api/users/profile/avatar', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.token || localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ avatar: url })
+        });
+
+        if (!avatarRes.ok) {
+            const msg = await avatarRes.text();
+            throw new Error(msg || 'Cập nhật ảnh đại diện thất bại');
+        }
+
+        // Update avatar images on the page
+        document.querySelectorAll('#header-avatar, .avatar-large, .avatar-small, #modal-avatar, #create-post-avatar').forEach(img => {
+            if (img) img.src = url;
+        });
+
+        window.showToast('Đã cập nhật ảnh đại diện!', 'success');
+    } catch (err) {
+        console.error('Lỗi cập nhật avatar từ URL', err);
+        window.showCustomAlert('Lỗi', 'Không thể cập nhật ảnh đại diện từ URL.', 'error');
+    }
+}
+
+function promptAvatarUrl() {
+    const url = prompt('Dán URL ảnh đại diện (bắt đầu bằng http:// hoặc https://):');
+    if (url) updateAvatarFromUrl(url.trim());
+}
+
 async function requestPasswordResetEmail() {
     if (!currentModerator.email) {
         window.showCustomAlert("Thông báo", "Không tìm thấy email tài khoản để đổi mật khẩu.", "warning");
@@ -767,7 +804,7 @@ async function fetchUserProfile() {
             }
             // Hiển thị avatar lên header
             const avatarImg = document.getElementById('header-avatar');
-            if (avatarImg) avatarImg.src = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=00d1b2&color=fff`;
+            if (avatarImg) avatarImg.src = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=5e6ad2&color=fff`;
 
             const staffName = document.getElementById('staff-display-name');
             if (staffName) staffName.textContent = user.fullName || 'Nhân viên điều phối';
@@ -941,7 +978,7 @@ window.renderPostDetailContent = function (post) {
     if (timeElem) timeElem.innerText = new Date(post.createdAt).toLocaleString('vi-VN');
 
     const avatarElem = document.getElementById('mod-post-modal-avatar');
-    if (avatarElem) avatarElem.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(post.authorName || 'Ẩn danh') + '&background=00d1b2&color=fff';
+    if (avatarElem) avatarElem.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(post.authorName || 'Ẩn danh') + '&background=5e6ad2&color=fff';
 
     const contentElem = document.getElementById('mod-post-modal-content-original');
     if (contentElem) contentElem.innerText = post.content || '(Nội dung trống)';
@@ -1701,7 +1738,7 @@ function openModChat(id, name, avatar) {
     chatWindow.style.display = 'flex';
 
     document.getElementById('chat-partner-name').textContent = name;
-    document.getElementById('chat-partner-avatar').src = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=00d1b2&color=fff`;
+    document.getElementById('chat-partner-avatar').src = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5e6ad2&color=fff`;
 
     const body = document.getElementById('chat-messages-body');
     body.innerHTML = `<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;"><div class="skeleton-box" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div><div class="skeleton-box" style="width:120px;height:32px;border-radius:16px 16px 16px 4px;"></div></div><div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><div class="skeleton-box" style="width:150px;height:40px;border-radius:16px 16px 4px 16px;"></div></div><div style="display:flex;gap:8px;align-items:flex-end;"><div class="skeleton-box" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div><div class="skeleton-box" style="width:180px;height:32px;border-radius:16px 16px 16px 4px;"></div></div>`;

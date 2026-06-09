@@ -78,12 +78,13 @@ public class ModeratorController {
     /** Lấy tất cả bài viết (để xem xét nội dung) */
     @GetMapping("/posts")
     public ResponseEntity<?> getAllPosts() {
-        org.springframework.data.domain.Page<Post> postPage = postRepository.findAllByOrderByCreatedAtDesc(org.springframework.data.domain.PageRequest.of(0, 200));
+        org.springframework.data.domain.Page<Post> postPage = postRepository
+                .findAllByOrderByCreatedAtDesc(org.springframework.data.domain.PageRequest.of(0, 200));
         List<Post> posts = postPage.getContent();
 
         // 1. Lấy tất cả post ID để batch query
         List<Long> postIds = posts.stream().map(Post::getId).collect(Collectors.toList());
-        
+
         Map<Long, Long> likeCounts = new HashMap<>();
         Map<Long, Long> commentCounts = new HashMap<>();
 
@@ -917,9 +918,11 @@ public class ModeratorController {
     // ==================== KIỂM DUYỆT CỘNG ĐỒNG ====================
 
     @GetMapping("/communities")
-    public ResponseEntity<?> getAllCommunities(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<?> getAllCommunities(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         User moderator = getAuthenticatedUser(authHeader);
-        if (moderator == null) return ResponseEntity.status(401).body("Unauthorized");
+        if (moderator == null)
+            return ResponseEntity.status(401).body("Unauthorized");
 
         List<Map<String, Object>> communities = communityRepository.findAll().stream().map(c -> {
             Map<String, Object> map = new HashMap<>();
@@ -928,13 +931,19 @@ public class ModeratorController {
             map.put("description", c.getDescription());
             map.put("avatarUrl", c.getAvatarUrl());
             map.put("isPrivate", c.getIsPrivate());
+            // Compatibility helpers for frontend: privacyStatus string and approval flags
+            map.put("privacyStatus", c.getIsPrivate() != null && c.getIsPrivate() ? "PRIVATE" : "PUBLIC");
+            map.put("requireApproval", c.getRequireApproval());
+            map.put("requirePostApproval", c.getRequirePostApproval());
             map.put("createdAt", c.getCreatedAt());
             if (c.getCreator() != null) {
                 map.put("creatorId", c.getCreator().getId());
                 map.put("creatorName", c.getCreator().getFullName());
             }
-            long mCount = communityMemberRepository.countByCommunityIdAndStatus(c.getId(), com.pbl5.enums.CommunityMemberStatus.ACTIVE);
-            long pCount = postRepository.countByCommunityIdAndStatusIn(c.getId(), List.of(com.pbl5.enums.PostStatus.ACTIVE, com.pbl5.enums.PostStatus.PUBLISHED));
+            long mCount = communityMemberRepository.countByCommunityIdAndStatus(c.getId(),
+                    com.pbl5.enums.CommunityMemberStatus.ACTIVE);
+            long pCount = postRepository.countByCommunityIdAndStatusIn(c.getId(),
+                    List.of(com.pbl5.enums.PostStatus.ACTIVE, com.pbl5.enums.PostStatus.PUBLISHED));
             map.put("memberCount", mCount);
             map.put("postCount", pCount);
             return map;
@@ -943,13 +952,16 @@ public class ModeratorController {
     }
 
     @DeleteMapping("/communities/{id}")
-    public ResponseEntity<?> deleteCommunity(@PathVariable Long id, @RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<?> deleteCommunity(@PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         User moderator = getAuthenticatedUser(authHeader);
-        if (moderator == null) return ResponseEntity.status(401).body("Unauthorized");
+        if (moderator == null)
+            return ResponseEntity.status(401).body("Unauthorized");
 
         Optional<com.pbl5.model.Community> commOpt = communityRepository.findById(id);
-        if (commOpt.isEmpty()) return ResponseEntity.notFound().build();
-        
+        if (commOpt.isEmpty())
+            return ResponseEntity.notFound().build();
+
         try {
             com.pbl5.model.Community community = commOpt.get();
             communityService.deleteCommunityAndNotifyMembers(community, moderator);

@@ -136,7 +136,9 @@
             <div class="profile-info-section">
                 <div class="profile-avatar-wrapper">
                     <img src="https://ui-avatars.com/api/?name=User&background=5e6ad2&color=fff" alt="Avatar" id="profile-avatar" onerror="this.src='https://ui-avatars.com/api/?name=User&background=5e6ad2&color=fff'">
-                    <input type="file" id="avatar-upload-input" accept="image/*" style="display:none;" onchange="uploadImage('avatar', event)"><button class="edit-avatar-btn" onclick="document.getElementById('avatar-upload-input').click()"><i class="fa-solid fa-camera"></i></button>
+                    <input type="file" id="avatar-upload-input" accept="image/*" style="display:none;" onchange="uploadImage('avatar', event)">
+                    <button class="edit-avatar-btn" onclick="document.getElementById('avatar-upload-input').click()"><i class="fa-solid fa-camera"></i></button>
+                    <button class="edit-avatar-btn" onclick="promptAvatarUrl()" title="Đặt URL ảnh"><i class="fa-solid fa-link"></i></button>
                 </div>
                 
                 <div class="profile-name-section">

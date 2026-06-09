@@ -210,15 +210,16 @@
                 </div>
 
                 <div class="filter-bar" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
-                    <div style="flex: 1; position: relative;">
+                    <div style="flex: 1 1 0; min-width: 0; position: relative;">
                         <i class="fa-solid fa-search"
                             style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #65676b;"></i>
                         <input type="text" id="review-search-input"
                             placeholder="Tìm kiếm theo ID bài, ID user hoặc tên user..."
                             style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     </div>
+                    <div style="display:flex;gap:10px;flex-shrink:0;">
                     <select id="review-filter-select"
-                        style="padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; min-width: 150px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; width: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <option value="ALL">Tất cả bài viết</option>
                         <option value="PENDING_REVIEW" selected>Chờ duyệt</option>
                         <option value="PROCESSING">Đang duyệt</option>
@@ -227,11 +228,12 @@
                     </select>
 
                     <select id="ai-filter-select"
-                        style="display: none; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; min-width: 150px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        style="display: none; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; width: 180px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <option value="AI_ALL">Tất cả bài viết AI</option>
                         <option value="AI_APPROVED">Đã duyệt (AI)</option>
                         <option value="AI_REJECTED">Đã xóa tự động (AI)</option>
                     </select>
+                    </div>
                 </div>
 
                 <div class="review-feed" id="review-posts-list">
@@ -334,18 +336,29 @@
                 </div>
 
                 <div class="filter-bar" style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
-                    <div style="flex: 3; position: relative;">
+                    <div style="flex: 1 1 0; min-width: 0; position: relative;">
                         <i class="fa-solid fa-search"
                             style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #65676b;"></i>
                         <input type="text" id="communities-search-input" placeholder="Tìm kiếm tên hoặc mô tả cộng đồng..."
                             style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     </div>
-                    <select id="communities-status-filter"
-                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; min-width: 120px; max-width: 160px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0;">
-                        <option value="ALL">Tất cả</option>
-                        <option value="ACTIVE">Hoạt động</option>
-                        <option value="LOCKED">Đã khóa</option>
-                    </select>
+                    <div style="display:flex;gap:10px;flex-shrink:0;align-items:center;">
+                        <select id="communities-privacy-filter"
+                            style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; width: 150px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0;">
+                            <option value="ALL">Tất cả chế độ</option>
+                            <option value="PUBLIC">Công khai</option>
+                            <option value="PRIVATE">Riêng tư</option>
+                        </select>
+                        <select id="communities-status-filter"
+                            style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface-bg); color: var(--text-primary); font-size: 14px; width: 150px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0;">
+                            <option value="ALL">Tất cả</option>
+                            <option value="ACTIVE">Hoạt động</option>
+                            <option value="LOCKED">Đã khóa</option>
+                        </select>
+                        <button class="btn-refresh" onclick="loadCommunities()" style="flex-shrink: 0;">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card">
                     <table class="mod-table">

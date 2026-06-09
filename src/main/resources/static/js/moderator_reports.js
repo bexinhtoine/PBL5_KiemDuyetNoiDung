@@ -303,7 +303,7 @@ window.openReportDetailModal = function (reportId) {
     const reporter = report.reporter || { fullName: 'Ẩn danh', id: '?', avatar: '' };
     document.getElementById('rd-reporter-name').textContent = reporter.fullName;
     document.getElementById('rd-reporter-id').textContent = `ID: ${reporter.id}`;
-    document.getElementById('rd-reporter-avatar').src = reporter.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporter.fullName)}&background=00d1b2&color=fff`;
+    document.getElementById('rd-reporter-avatar').src = reporter.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporter.fullName)}&background=5e6ad2&color=fff`;
 
     // Report Info
     const catLabel = report.category === 'APPEAL' ? 'Kháng nghị' : (report.category || 'Nội dung');

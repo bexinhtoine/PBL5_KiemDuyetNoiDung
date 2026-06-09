@@ -98,6 +98,18 @@ function toggleInboxDropdown() {
 let currentMessengerFilter = 'all';
 let messengerSearchQuery = '';
 
+function renderInboxState(message, iconClass = 'fa-circle-info') {
+    const inboxList = document.getElementById('inbox-list');
+    if (!inboxList) return;
+
+    inboxList.innerHTML = `
+        <div style="padding: 18px 16px; text-align: center; color: var(--text-muted); font-size: 14px; line-height: 1.45;">
+            <i class="fa-solid ${iconClass}" style="font-size: 18px; margin-bottom: 8px; color: var(--primary-color);"></i>
+            <div>${escapeHtml(message)}</div>
+        </div>
+    `;
+}
+
 function handleMessengerSearch(val) {
     messengerSearchQuery = val.toLowerCase().trim();
     loadInboxDropdown();
@@ -124,11 +136,19 @@ async function loadInboxDropdown() {
         </div>
     `).join('');
 
+    let requestTimer = null;
     try {
-        const [friendsRes, convRes] = await Promise.all([
+        const requestPromise = Promise.all([
             fetch('/api/friends', { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch('/api/messages/conversations', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
+
+        const timeoutPromise = new Promise((_, reject) => {
+            requestTimer = setTimeout(() => reject(new Error('INBOX_LOAD_TIMEOUT')), 12000);
+        });
+
+        const [friendsRes, convRes] = await Promise.race([requestPromise, timeoutPromise]);
+        if (requestTimer) clearTimeout(requestTimer);
 
         const friends = friendsRes.ok ? await friendsRes.json() : [];
         const conversations = convRes.ok ? await convRes.json() : [];
@@ -149,7 +169,7 @@ async function loadInboxDropdown() {
         }
         
         if (messengerSearchQuery) {
-            contacts = contacts.filter(c => c.fullName.toLowerCase().includes(messengerSearchQuery));
+            contacts = contacts.filter(c => (c.fullName || '').toLowerCase().includes(messengerSearchQuery));
         }
 
         inboxList.innerHTML = '';
@@ -192,7 +212,11 @@ async function loadInboxDropdown() {
             inboxList.appendChild(item);
         });
 
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+        if (requestTimer) clearTimeout(requestTimer);
+        renderInboxState('Không tải được tin nhắn. Vui lòng thử lại.', 'fa-triangle-exclamation');
+    }
 }
 
 async function fetchUnreadNotificationCount() {

@@ -635,33 +635,34 @@
 
                 <!-- Filter bar: search icon + input (flex:3) + status dropdown + privacy dropdown -->
                 <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
-                    <!-- Search icon nằm ngoài input, align-items center -->
-                    <div style="display: flex; align-items: center; gap: 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; flex: 3; box-shadow: var(--card-shadow);">
+                    <!-- Search: flexible -->
+                    <div style="display: flex; align-items: center; gap: 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; flex: 1 1 0; min-width: 0; box-shadow: var(--card-shadow);">
                         <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted); flex-shrink: 0;"></i>
                         <input type="text" id="admin-community-search"
                             placeholder="Tìm kiếm tên hoặc mô tả cộng đồng..."
                             oninput="adminFilterCommunities()" autocomplete="off" readonly
                             onfocus="this.removeAttribute('readonly');"
-                            style="border: none; outline: none; background: transparent; font-size: 14px; color: var(--text-main); width: 100%;">
+                            style="border: none; outline: none; background: transparent; font-size: 14px; color: var(--text-main); width: 100%; min-width: 0;">
                     </div>
-                    <!-- Status filter -->
-                    <select id="admin-community-status-filter" onchange="adminFilterCommunities()"
-                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; min-width: 130px; flex-shrink: 0; cursor: pointer; outline: none; box-shadow: var(--card-shadow);">
-                        <option value="ALL">Tất cả</option>
-                        <option value="ACTIVE">Hoạt động</option>
-                        <option value="LOCKED">Đã khóa</option>
-                    </select>
-                    <!-- Privacy filter -->
-                    <select id="admin-community-privacy-filter" onchange="adminFilterCommunities()"
-                        style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; min-width: 130px; flex-shrink: 0; cursor: pointer; outline: none; box-shadow: var(--card-shadow);">
-                        <option value="ALL">Tất cả chế độ</option>
-                        <option value="PUBLIC">Công khai</option>
-                        <option value="PRIVATE">Riêng tư</option>
-                    </select>
-                    <!-- Refresh -->
-                    <button class="btn-refresh" onclick="adminLoadCommunities()" style="flex-shrink: 0;">
-                        <i class="fa-solid fa-rotate-right"></i>
-                    </button>
+                    <!-- Right-side filters group (fixed) -->
+                    <div style="display:flex;gap:10px;flex-shrink:0;align-items:center;">
+                        <select id="admin-community-status-filter" onchange="adminFilterCommunities()"
+                            style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; width: 150px; flex-shrink: 0; cursor: pointer; outline: none; box-shadow: var(--card-shadow);">
+                            <option value="ALL">Tất cả</option>
+                            <option value="ACTIVE">Hoạt động</option>
+                            <option value="LOCKED">Đã khóa</option>
+                        </select>
+                        <select id="admin-community-privacy-filter" onchange="adminFilterCommunities()"
+                            style="padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; width: 150px; flex-shrink: 0; cursor: pointer; outline: none; box-shadow: var(--card-shadow);">
+                            <option value="ALL">Tất cả chế độ</option>
+                            <option value="PUBLIC">Công khai</option>
+                            <option value="PRIVATE">Riêng tư</option>
+                        </select>
+                        <!-- Refresh -->
+                        <button class="btn-refresh" onclick="adminLoadCommunities()" style="flex-shrink: 0;">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Table card: giống .card của Moderator, không có stats cards -->

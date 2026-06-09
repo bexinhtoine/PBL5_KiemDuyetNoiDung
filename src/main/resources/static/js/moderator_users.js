@@ -348,7 +348,7 @@ window.viewUserDetails = async function (userId) {
                                 <span style="font-size: 15px;">Người dùng này chưa có bài viết nào trong hệ thống.</span>
                             </div>
                         ` : posts.map(post => {
-                        const authorAvatar = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'User')}&background=00d1b2&color=fff`;
+                        const authorAvatar = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'User')}&background=5e6ad2&color=fff`;
                         const postTime = typeof timeSince === 'function' ? timeSince(post.createdAt) : new Date(post.createdAt).toLocaleString('vi-VN');
 
                         let mediaHtml = '';

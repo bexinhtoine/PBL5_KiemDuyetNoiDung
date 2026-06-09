@@ -108,7 +108,8 @@ public class PostController {
             return false;
         }
 
-        // Handle deleted/rejected/AI rejected posts: allowed for admins, moderators, and the author
+        // Handle deleted/rejected/AI rejected posts: allowed for admins, moderators,
+        // and the author
         if (p.getStatus() == com.pbl5.enums.PostStatus.REJECTED
                 || p.getStatus() == com.pbl5.enums.PostStatus.AUTO_REJECTED
                 || p.getStatus() == com.pbl5.enums.PostStatus.REJECTED_BY_AI) {
@@ -223,7 +224,8 @@ public class PostController {
         // 1. Bài viết feed chính (cộng đồng, admin feed)
         List<Post> feedPosts = postRepository.findHomeFeedPaged(currentUser.getId(), isAdminOrMod, pageable);
 
-        // 2. Bài viết cá nhân PUBLIC từ người dùng khác (query riêng, tránh bug JOIN FETCH + Pageable)
+        // 2. Bài viết cá nhân PUBLIC từ người dùng khác (query riêng, tránh bug JOIN
+        // FETCH + Pageable)
         List<Post> publicPersonalPosts = postRepository.findPublicPersonalPostsForFeed(
                 currentUser.getId(), PageRequest.of(0, 50));
 
@@ -232,7 +234,8 @@ public class PostController {
                 currentUser.getId(), PageRequest.of(0, 50));
 
         // 4. Bài viết của bản thân (đảm bảo luôn hiện bài cá nhân của mình)
-        List<Post> myPosts = postRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId(), PageRequest.of(0, 100));
+        List<Post> myPosts = postRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId(),
+                PageRequest.of(0, 100));
         myPosts = myPosts.stream()
                 .filter(p -> p.getStatus() != PostStatus.DELETED)
                 .collect(Collectors.toList());
@@ -241,22 +244,28 @@ public class PostController {
         Set<Long> seen = new HashSet<>();
         List<Post> merged = new ArrayList<>();
         for (Post p : feedPosts) {
-            if (seen.add(p.getId())) merged.add(p);
+            if (seen.add(p.getId()))
+                merged.add(p);
         }
         for (Post p : publicPersonalPosts) {
-            if (seen.add(p.getId())) merged.add(p);
+            if (seen.add(p.getId()))
+                merged.add(p);
         }
         for (Post p : friendsPersonalPosts) {
-            if (seen.add(p.getId())) merged.add(p);
+            if (seen.add(p.getId()))
+                merged.add(p);
         }
         for (Post p : myPosts) {
-            if (seen.add(p.getId())) merged.add(p);
+            if (seen.add(p.getId()))
+                merged.add(p);
         }
 
         // Sắp xếp theo thời gian tạo mới nhất
         merged.sort((a, b) -> {
-            if (a.getCreatedAt() == null) return 1;
-            if (b.getCreatedAt() == null) return -1;
+            if (a.getCreatedAt() == null)
+                return 1;
+            if (b.getCreatedAt() == null)
+                return -1;
             return b.getCreatedAt().compareTo(a.getCreatedAt());
         });
 
@@ -708,7 +717,7 @@ public class PostController {
                             : "Người dùng";
                     String authorAvatar = post.getUser().getAvatar() != null ? post.getUser().getAvatar()
                             : "https://ui-avatars.com/api/?name=" + authorName.replace(" ", "+")
-                                    + "&background=00d1b2&color=fff";
+                                    + "&background=5e6ad2&color=fff";
 
                     PostResponse resp = new PostResponse(
                             post.getId(),
@@ -812,7 +821,7 @@ public class PostController {
 
         String authorName = post.getUser().getFullName() != null ? post.getUser().getFullName() : "Người dùng";
         String authorAvatar = post.getUser().getAvatar() != null ? post.getUser().getAvatar()
-                : "https://ui-avatars.com/api/?name=" + authorName.replace(" ", "+") + "&background=00d1b2&color=fff";
+                : "https://ui-avatars.com/api/?name=" + authorName.replace(" ", "+") + "&background=5e6ad2&color=fff";
 
         PostResponse response = new PostResponse(
                 post.getId(),
@@ -1008,4 +1017,4 @@ public class PostController {
         }
     }
 
-}
+}

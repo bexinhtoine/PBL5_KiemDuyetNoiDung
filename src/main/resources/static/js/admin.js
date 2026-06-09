@@ -2358,64 +2358,53 @@ async function adminLoadCommunityMembersTab(id) {
 async function adminLoadCommunityRulesTab(id) {
     const container = document.getElementById('admin-comm-rules-content');
     if (!container) return;
+
+    // Use cached community data when possible to avoid failing on rules API
+    const community = adminAllCommunities.find(c => c.id === id) || {};
+
+    const privacyStatus = community.privacyStatus !== undefined
+        ? (community.privacyStatus === 'PUBLIC' ? 'Công khai (Bất kỳ ai cũng có thể tìm kiếm, tham gia và xem nội dung)' : 'Riêng tư (Chỉ thành viên mới xem được nội dung, cần phê duyệt tham gia)')
+        : (community.isPrivate ? 'Riêng tư (Chỉ thành viên mới xem được nội dung, cần phê duyệt tham gia)' : 'Công khai (Bất kỳ ai cũng có thể tìm kiếm, tham gia và xem nội dung)');
+
+    const memberApproval = community.requireApproval === true
+        ? 'Phê duyệt thủ công (Người dùng cần được admin duyệt để tham gia)'
+        : 'Tự động duyệt (Người dùng tham gia nhóm ngay lập tức)';
+
+    const postApproval = community.requirePostApproval === true
+        ? 'Phê duyệt trước (Chủ nhóm duyệt trước, sau đó AI kiểm duyệt an toàn sau)'
+        : 'Tự động duyệt (AI kiểm duyệt trước, nếu an toàn sẽ tự động hiển thị)';
+
     container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:12px;">
-            <div class="skeleton-rule-card"><div class="skeleton-box skeleton-rule-title"></div><div class="skeleton-box skeleton-rule-desc"></div></div>
-            <div class="skeleton-rule-card"><div class="skeleton-box skeleton-rule-title" style="width:150px;"></div><div class="skeleton-box skeleton-rule-desc"></div></div>
-        </div>
-    `;
-    
-    try {
-        const res = await fetch(`/api/communities/${id}/rules`);
-        if (!res.ok) throw new Error();
-        const rules = await res.json();
-        
-        if (!rules || rules.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Cộng đồng chưa thiết lập quy tắc nhóm.</p>';
-            return;
-        }
-        
-        container.innerHTML = rules.map(r => `
-            <div class="comm-rule-card">
-                <div style="font-weight:800;font-size:14px;color:var(--text-primary);margin-bottom:6px;">
-                    ${r.ruleOrder}. ${escapeHtml(r.title)}
-                </div>
-                <div style="font-size:13px;color:var(--text-muted);line-height:1.5;">
-                    ${escapeHtml(r.description || '')}
-                </div>
+            <div class="comm-rule-card" style="padding:14px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);">
+                <div style="font-weight:700;font-size:13px;color:var(--text-muted);margin-bottom:8px;">Quyền riêng tư</div>
+                <div style="font-size:14px;color:var(--text-primary);">${escapeHtml(privacyStatus)}</div>
             </div>
-        `).join('');
-    } catch (e) {
-        container.innerHTML = '<p style="text-align:center;color:var(--red);padding:30px;">Lỗi khi tải quy tắc nhóm.</p>';
-    }
+
+            <div class="comm-rule-card" style="padding:14px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);">
+                <div style="font-weight:700;font-size:13px;color:var(--text-muted);margin-bottom:8px;">Phê duyệt thành viên</div>
+                <div style="font-size:14px;color:var(--text-primary);">${escapeHtml(memberApproval)}</div>
+            </div>
+
+            <div class="comm-rule-card" style="padding:14px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);">
+                <div style="font-weight:700;font-size:13px;color:var(--text-muted);margin-bottom:8px;">Kiểm duyệt bài viết</div>
+                <div style="font-size:14px;color:var(--text-primary);">${escapeHtml(postApproval)}</div>
+            </div>
+        </div>`;
 }
 
 async function adminLoadCommunityTopicsTab(id) {
     const container = document.getElementById('admin-comm-topics-content');
     if (!container) return;
+
+    const community = adminAllCommunities.find(c => c.id === id) || {};
+    const topicText = community.description && community.description.trim() !== '' ? community.description : 'Không có chủ đề';
+
     container.innerHTML = `
-        <div style="padding:15px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);display:flex;flex-wrap:wrap;gap:8px;"><div class="skeleton-box" style="width:80px;height:24px;border-radius:12px;"></div><div class="skeleton-box" style="width:100px;height:24px;border-radius:12px;"></div><div class="skeleton-box" style="width:70px;height:24px;border-radius:12px;"></div></div>
-    `;
-    
-    try {
-        const res = await fetch(`/api/communities/${id}/tags`);
-        if (!res.ok) throw new Error();
-        const tags = await res.json();
-        
-        if (!tags || tags.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Cộng đồng chưa thiết lập chủ đề/tag.</p>';
-            return;
-        }
-        
-        container.innerHTML = `<div style="padding:15px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);">
-            <div style="font-weight:700;font-size:13px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;">Các chủ đề trong nhóm:</div>
-            <div style="display:flex;flex-wrap:wrap;">
-                ${tags.map(t => `<span class="comm-tag-chip"><i class="fa-solid fa-hashtag"></i> ${escapeHtml(t)}</span>`).join('')}
-            </div>
+        <div style="padding:15px;background:var(--bg-main);border-radius:10px;border:1px solid var(--border-color);">
+            <div style="font-weight:700;font-size:13px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;">Chủ đề / Mô tả cộng đồng</div>
+            <div style="font-size:14px;color:var(--text-primary);line-height:1.6;">${escapeHtml(topicText)}</div>
         </div>`;
-    } catch (e) {
-        container.innerHTML = '<p style="text-align:center;color:var(--red);padding:30px;">Lỗi khi tải chủ đề nhóm.</p>';
-    }
 }
 
 async function adminLoadCommunityStatsTab(id) {

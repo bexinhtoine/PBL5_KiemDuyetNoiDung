@@ -69,7 +69,7 @@ function renderManagePostsFeed(posts) {
     const totalPages = Math.ceil(modFilteredPosts.length / MOD_POSTS_PAGE_SIZE);
 
     const cards = pagePosts.map(post => {
-        const authorAvatar = post.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName || 'User')}&background=00d1b2&color=fff`;
+        const authorAvatar = post.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName || 'User')}&background=5e6ad2&color=fff`;
         const postTime = typeof timeSince === 'function' ? timeSince(post.createdAt) : 'Vừa xong';
 
         // Determine if post is from a group/community

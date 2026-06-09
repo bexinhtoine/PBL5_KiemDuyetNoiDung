@@ -9,6 +9,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Controller xử lý các API liên quan đến xác thực người dùng.
@@ -101,6 +107,9 @@ public class AuthController {
         }
     }
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     /**
      * API đặt lại mật khẩu mới bằng token nhận được qua email.
      * POST /api/auth/reset-password
@@ -115,6 +124,40 @@ public class AuthController {
             return ResponseEntity.ok("Mật khẩu đã được đặt lại thành công.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * API chạy trực tiếp chèn dữ liệu mẫu vào PostgreSQL từ tệp import.sql
+     * POST /api/auth/import-data
+     */
+    @PostMapping("/import-data")
+    public ResponseEntity<?> importData() {
+        try {
+            ClassPathResource resource = new ClassPathResource("import.sql");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
+            String sqlContent = reader.lines().collect(Collectors.joining("\n"));
+            
+            // Tách các lệnh SQL theo dấu chấm phẩy và bỏ qua các dòng comment hoặc trống
+            String[] queries = sqlContent.split(";");
+            int count = 0;
+            for (String query : queries) {
+                String cleanQuery = query.trim();
+                // Bỏ qua dòng trống hoặc dòng chú thích
+                if (!cleanQuery.isEmpty() && !cleanQuery.startsWith("--")) {
+                    jdbcTemplate.execute(cleanQuery);
+                    count++;
+                }
+            }
+            return ResponseEntity.ok(java.util.Map.of(
+                "success", true,
+                "message", "Đã thực thi thành công " + count + " câu lệnh SQL chèn dữ liệu mẫu vào CSDL của bạn!"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                "success", false,
+                "error", e.getMessage()
+            ));
         }
     }
 }
