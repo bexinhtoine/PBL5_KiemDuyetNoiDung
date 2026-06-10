@@ -1,5 +1,6 @@
 let targetUserId = null;
 let currentUserId = null;
+let currentProfileData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Kiểm tra đăng nhập
@@ -15,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Fetch User Info
     fetchUserProfile();
-    fetchSidebarSuggestions(token);
 });
 
 function fetchUserProfile() {
@@ -90,6 +90,7 @@ function fetchTargetUser(id, token) {
 }
 
 function fillProfileData(user, isCurrentUser) {
+    if (isCurrentUser) currentProfileData = user;
     // Cập nhật Trang cá nhân
     document.getElementById('profile-name').innerText = user.fullName || "Người dùng";
     document.getElementById('profile-bio').innerText = user.bio || "Chưa có tiểu sử.";
@@ -351,7 +352,7 @@ function renderProfilePosts(posts) {
         return;
     }
 
-    container.innerHTML = '';
+    let allHtml = '';
 
     posts.forEach(post => {
         let visibilityIcon = '';
@@ -538,8 +539,9 @@ function renderProfilePosts(posts) {
         </article>
         `;
 
-        container.innerHTML += postHtml;
+        allHtml += postHtml;
     });
+    container.innerHTML = allHtml;
 }
 
 function escapeHtml(unsafe) {
@@ -1113,18 +1115,6 @@ function removeFriend(id) {
 // === FRIENDSHIP END ===
 
 // === CHỈNH SỬA TRANG CÁ NHÂN ===
-let currentProfileData = null;
-
-const originalFillProfileData = fillProfileData;
-fillProfileData = function (user, isCurrentUser) {
-    if (isCurrentUser) currentProfileData = user;
-
-    if (user.cover) {
-        document.getElementById('profile-cover').src = user.cover;
-    }
-
-    originalFillProfileData(user, isCurrentUser);
-};
 
 function openEditProfileModal() {
     if (!currentProfileData) return;

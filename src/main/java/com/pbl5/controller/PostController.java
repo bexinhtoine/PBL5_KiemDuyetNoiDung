@@ -153,6 +153,19 @@ public class PostController {
             return false;
         }
 
+        // Handle community posts based on community privacy
+        if (p.getCommunity() != null) {
+            if (!p.getCommunity().getIsPrivate()) {
+                return true;
+            }
+            boolean isMember = communityMemberRepository
+                    .findByCommunityIdAndUserId(p.getCommunity().getId(), currentUser.getId())
+                    .map(m -> m.getStatus() == com.pbl5.enums.CommunityMemberStatus.ACTIVE)
+                    .orElse(false);
+            boolean isCreator = p.getCommunity().getCreator() != null && p.getCommunity().getCreator().getId().equals(currentUser.getId());
+            return isMember || isCreator;
+        }
+
         if (p.getVisibility() == PostVisibility.PUBLIC || p.getVisibility() == null)
             return true;
         if (p.getVisibility() == PostVisibility.PRIVATE)
@@ -636,7 +649,7 @@ public class PostController {
         messagingTemplate.convertAndSend("/topic/notifications/" + recipient.getId(), notification);
     }
 
-    private boolean canViewPost(Post p, User currentUser, Map<Long, Friendship> friendshipMap, Map<Long, com.pbl5.enums.CommunityRole> communityRoleMap) {
+    private boolean canViewPost(Post p, User currentUser, Map<Long, Friendship> friendshipMap, Map<Long, com.pbl5.enums.CommunityRole> communityRoleMap, Map<Long, com.pbl5.enums.CommunityMemberStatus> communityStatusMap) {
         if (p == null || p.getUser() == null || currentUser == null) {
             return false;
         }
@@ -680,6 +693,17 @@ public class PostController {
         if (p.getStatus() == com.pbl5.enums.PostStatus.PENDING_COMM_ADMIN
                 || p.getStatus() == com.pbl5.enums.PostStatus.DELETED) {
             return false;
+        }
+
+        // Handle community posts based on community privacy
+        if (p.getCommunity() != null) {
+            if (!p.getCommunity().getIsPrivate()) {
+                return true;
+            }
+            com.pbl5.enums.CommunityMemberStatus status = communityStatusMap != null ? communityStatusMap.get(p.getCommunity().getId()) : null;
+            boolean isMember = status == com.pbl5.enums.CommunityMemberStatus.ACTIVE;
+            boolean isCreator = p.getCommunity().getCreator() != null && p.getCommunity().getCreator().getId().equals(currentUser.getId());
+            return isMember || isCreator;
         }
 
         if (p.getVisibility() == PostVisibility.PUBLIC || p.getVisibility() == null)
@@ -754,7 +778,7 @@ public class PostController {
         List<PostResponse> responses = new ArrayList<>();
         for (Post post : posts) {
             try {
-                if (canViewPost(post, currentUser, friendshipMap, communityRoleMap)) {
+                if (canViewPost(post, currentUser, friendshipMap, communityRoleMap, communityStatusMap)) {
                     long likeCount = likeCountsMap.getOrDefault(post.getId(), 0L);
                     long commentCount = commentCountsMap.getOrDefault(post.getId(), 0L);
                     boolean isLiked = likedPostIdsSet.contains(post.getId());
@@ -831,7 +855,7 @@ public class PostController {
                     responses.add(resp);
                 }
             } catch (Exception e) {
-                // skip broken post
+                e.printStackTrace();
             }
         }
         return responses;

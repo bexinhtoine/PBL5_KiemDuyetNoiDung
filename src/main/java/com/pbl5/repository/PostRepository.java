@@ -90,6 +90,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
        @Query("SELECT DISTINCT p FROM Post p " +
                      "LEFT JOIN FETCH p.user " +
                      "LEFT JOIN FETCH p.processingModerator " +
+                     "LEFT JOIN p.community c " +
                      "WHERE p.status <> 'DELETED' " +
                      "AND NOT EXISTS (SELECT hp FROM HiddenPost hp WHERE hp.user.id = :currentUserId AND hp.post = p) "
                      +
@@ -107,8 +108,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                      "        ))" +
                      "      ))" +
                      "      OR (p.community IS NOT NULL AND (" +
-                     "        p.community.isPrivate = false " +
-                     "        OR p.community.creator.id = :currentUserId " +
+                     "        c.isPrivate = false " +
+                     "        OR c.creator.id = :currentUserId " +
                      "        OR EXISTS (" +
                      "          SELECT cm FROM CommunityMember cm WHERE cm.community = p.community " +
                      "          AND cm.user.id = :currentUserId AND cm.status = 'ACTIVE'" +

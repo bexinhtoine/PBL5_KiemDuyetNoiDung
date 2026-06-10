@@ -189,20 +189,25 @@ async function submitOnboarding() {
 // - updateModalVisibility()
 // - submitModalPost()
 
-async function fetchPosts(token) {
-    const container = document.getElementById('posts-container');
-    // We don't clear the skeleton here anymore because it's already in the HTML
-    // container.innerHTML = '<div class="card" style="padding:16px; text-align:center; color:#65676B;">Đang tải bài đăng...</div>';
+let currentPage = 0;
+let isFetching = false;
+let hasMore = true;
 
+async function fetchPosts(token, page = 0) {
+    if (isFetching || (!hasMore && page > 0)) return;
+    isFetching = true;
+
+    const container = document.getElementById('posts-container');
+    
     try {
-        const res = await fetch('/api/posts', {
+        const res = await fetch(`/api/posts?page=${page}&size=20`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) {
             const message = res.status === 401
                 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
                 : 'Không thể tải bài đăng. Vui lòng thử lại.';
-            if (container) {
+            if (container && page === 0) {
                 container.innerHTML = `<div class="card" style="padding:16px; text-align:center; color:#d93025;">${message}</div>`;
             }
             return;
@@ -212,14 +217,32 @@ async function fetchPosts(token) {
         if (!Array.isArray(posts)) {
             throw new Error('Dữ liệu bài đăng không hợp lệ');
         }
-        renderPosts(posts, token);
+        
+        if (posts.length < 20) {
+            hasMore = false;
+        }
+        
+        renderPosts(posts, token, page > 0);
+        currentPage = page;
     } catch (err) {
         console.error('Error fetching posts:', err);
-        if (container) {
+        if (container && page === 0) {
             container.innerHTML = '<div class="card" style="padding:16px; text-align:center; color:#d93025;">Đã xảy ra lỗi khi tải bài đăng.</div>';
         }
+    } finally {
+        isFetching = false;
     }
 }
+
+// Add scroll listener for infinite loading
+window.addEventListener('scroll', () => {
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300) {
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetchPosts(token, currentPage + 1);
+        }
+    }
+});
 
 function prependCreatedPostToFeed(post) {
     const container = document.getElementById('posts-container');
@@ -367,9 +390,11 @@ function timeSince(dateString) {
     return Math.floor(seconds) + " giây trước";
 }
 
-function renderPosts(posts, token) {
+function renderPosts(posts, token, append = false) {
     const container = document.getElementById('posts-container');
-    container.innerHTML = ''; // Clear cũ
+    if (!append) {
+        container.innerHTML = ''; // Clear cũ
+    }
 
     let allPostsHtml = '';
     posts.forEach(post => {
@@ -573,7 +598,11 @@ function renderPosts(posts, token) {
 
         allPostsHtml += postHtml;
     });
-    container.innerHTML = allPostsHtml;
+    if (append) {
+        container.insertAdjacentHTML('beforeend', allPostsHtml);
+    } else {
+        container.innerHTML = allPostsHtml;
+    }
 }
 
 function escapeHtml(unsafe) {
