@@ -33,6 +33,9 @@ public class Comment extends BaseContent {
     @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<Comment> replies = new java.util.ArrayList<>();
 
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<CommentLike> likes = new java.util.ArrayList<>();
+
 
 
 

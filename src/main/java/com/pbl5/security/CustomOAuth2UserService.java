@@ -50,16 +50,30 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         // Kiểm tra user đã tồn tại trong DB chưa (dựa trên email)
         Optional<User> userOptional = userRepository.findByEmail(email);
+        String googlePicture = oAuth2User.getAttribute("picture");
 
         if (userOptional.isPresent()) {
             // TH1: User đã có tài khoản (LOCAL hoặc GOOGLE)
             User user = userOptional.get();
+            boolean changed = false;
             
             // Nếu người dùng đăng nhập Google lúc tài khoản LOCAL đang chờ mã PIN,
             // ta tin tưởng Google và kích hoạt tài khoản cho họ luôn.
             if (user.getStatus() == UserStatus.INACTIVE) {
                 user.setStatus(UserStatus.ACTIVE);
                 user.setVerificationCode(null); // Xóa mã cấp phát
+                changed = true;
+            }
+            
+            // Đồng bộ avatar từ Google nếu avatar hiện tại của user trống
+            if (user.getAvatar() == null || user.getAvatar().isBlank()) {
+                if (googlePicture != null && !googlePicture.isBlank()) {
+                    user.setAvatar(googlePicture);
+                    changed = true;
+                }
+            }
+            
+            if (changed) {
                 userRepository.save(user);
             }
             
@@ -88,6 +102,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
             // Đặt verificationCode = "OAUTH2" để phân biệt với tài khoản LOCAL chưa xác thực
             newUser.setVerificationCode("OAUTH2");
+            
+            // Đặt avatar từ Google nếu có
+            if (googlePicture != null && !googlePicture.isBlank()) {
+                newUser.setAvatar(googlePicture);
+            }
+            
             userRepository.save(newUser);
         }
 

@@ -427,6 +427,8 @@ function renderProfilePosts(posts) {
                     <a href="javascript:void(0)" onclick="toggleBookmark(${post.id})"><i class="fa-regular fa-bookmark"></i> Lưu bài viết</a>
                     <a href="javascript:void(0)" onclick="hidePost(${post.id})"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết</a>
                     <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
+                    <a href="javascript:void(0)" onclick="startEditPost(${post.id})"><i class="fa-regular fa-pen-to-square"></i> Chỉnh sửa bài viết</a>
+                    <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
                     <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
                 `;
             } else {
@@ -434,6 +436,8 @@ function renderProfilePosts(posts) {
                     <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'PUBLIC')"><i class="fa-solid fa-earth-americas"></i> Công khai</a>
                     <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'FRIENDS')"><i class="fa-solid fa-user-group"></i> Chỉ bạn bè</a>
                     <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'PRIVATE')"><i class="fa-solid fa-lock"></i> Chỉ mình tôi</a>
+                    <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
+                    <a href="javascript:void(0)" onclick="startEditPost(${post.id})"><i class="fa-regular fa-pen-to-square"></i> Chỉnh sửa bài viết</a>
                     <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
                     <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
                 `;
@@ -462,7 +466,7 @@ function renderProfilePosts(posts) {
                 </a>
                 <div class="post-meta">
                     <h4 class="post-author">${authorHtml}</h4>
-                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
+                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> ${post.edited ? '<span style="font-size:11px;color:var(--text-muted);margin-left:5px;">(đã chỉnh sửa)</span>' : ''} <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
             
@@ -836,27 +840,40 @@ async function fetchComments(postId) {
             return;
         }
 
-        listDiv.innerHTML = comments.map(c => renderProfileCommentItem(c)).join('');
+        listDiv.innerHTML = comments.map(c => renderProfileCommentItem(c, postId)).join('');
     } catch (err) {
         console.error("Lỗi lấy comment:", err);
     }
 }
 
-function renderProfileCommentItem(c) {
+function renderProfileCommentItem(c, postId) {
     const timeStr = timeSince(c.createdAt);
+    const isMine = c.isMine || c.mine || false;
+    const createdAtDate = new Date(c.createdAt);
+    const now = new Date();
+    const diffMinutes = (now - createdAtDate) / (1000 * 60);
+
+    let actionsHtml = `
+        <div class="comment-actions" style="margin-left: 45px; font-size: 11px; display: flex; gap: 12px; margin-top: 2px; align-items: center;">
+            <span style="color: #65676b;">${timeStr}${c.edited ? ' (đã chỉnh sửa)' : ''}</span>
+            ${isMine && diffMinutes < 30 ? `<span onclick="startEditComment(${postId}, ${c.id}, '${c.content ? c.content.replace(/'/g, "\\'") : ''}')" style="color: #65676b; cursor: pointer; font-weight: 600;">Sửa</span>` : ''}
+            ${isMine ? `<span onclick="deleteComment(${postId}, ${c.id})" style="color: #65676b; cursor: pointer; font-weight: 600;">Xóa</span>` : ''}
+            ${!isMine ? `<span onclick="reportComment(${c.id})" style="color: #65676b; cursor: pointer; font-weight: 600;" title="Báo cáo bình luận"><i class="fa-regular fa-flag"></i></span>` : ''}
+        </div>
+    `;
+
     return `
-        <div style="margin-bottom: 10px;">
+        <div style="margin-bottom: 10px;" id="comment-container-${c.id}">
             <div class="comment" style="display: flex; gap: 8px;">
                 <a href="/html/profile.html?userId=${c.authorId}">
                     <img src="${c.authorAvatar || '/uploads/default-avatar.png'}" class="avatar-small" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" onerror="this.src='/uploads/default-avatar.png'">
                 </a>
                 <div class="comment-bubble" style="background: var(--comment-bg); padding: 8px 12px; border-radius: 18px; max-width: 80%;">
                     <strong style="font-size: 13px;"><a href="/html/profile.html?userId=${c.authorId}" style="text-decoration:none; color:inherit;">${c.authorName}</a></strong>
-                    <div style="font-size: 14px; margin-top: 2px; white-space: pre-wrap;">${escapeHtml(c.content || '')}</div>
+                    <div id="comment-content-${c.id}" style="font-size: 14px; margin-top: 2px; white-space: pre-wrap;">${escapeHtml(c.content || '')}</div>
                 </div>
-                <div style="margin-top: 5px; cursor: pointer; color: #65676b;" onclick="reportComment(${c.id})" title="Báo cáo bình luận"><i class="fa-regular fa-flag"></i></div>
             </div>
-            <div style="font-size: 11px; color: #65676b; margin-left: 45px; margin-top: 2px;">${timeStr}</div>
+            ${actionsHtml}
         </div>
     `;
 }
@@ -904,18 +921,102 @@ async function submitComment(postId) {
 
                 const commentWrapper = document.createElement('div');
                 commentWrapper.className = 'comment-item-fade-in';
-                commentWrapper.innerHTML = renderProfileCommentItem(newComment);
+                commentWrapper.innerHTML = renderProfileCommentItem(newComment, postId);
                 listDiv.appendChild(commentWrapper);
 
                 commentWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         } else {
-            alert('Lỗi gửi bình luận');
+            const errorMsg = await res.text();
+            alert(errorMsg || 'Lỗi gửi bình luận');
         }
     } catch (err) {
         console.error(err);
     }
 }
+
+window.startEditComment = function (postId, commentId, currentContent) {
+    const contentDiv = document.getElementById(`comment-content-${commentId}`);
+    const originalHtml = contentDiv.innerHTML;
+
+    contentDiv.innerHTML = `
+        <div style="margin-top: 5px;">
+            <textarea id="edit-input-${commentId}" style="width: 100%; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 8px; padding: 5px; outline: none; font-size: 14px; font-family: inherit;">${currentContent}</textarea>
+            <div style="display: flex; gap: 5px; margin-top: 5px; justify-content: flex-end;">
+                <button onclick="cancelEditComment(${commentId}, \`${originalHtml.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="background: #e4e6eb; border: none; padding: 3px 8px; border-radius: 5px; font-size: 12px; cursor: pointer;">Hủy</button>
+                <button onclick="saveEditComment(${postId}, ${commentId})" style="background: var(--primary-color); color: white; border: none; padding: 3px 8px; border-radius: 5px; font-size: 12px; cursor: pointer;">Lưu</button>
+            </div>
+        </div>
+    `;
+};
+
+window.cancelEditComment = function (commentId, originalHtml) {
+    const contentDiv = document.getElementById(`comment-content-${commentId}`);
+    contentDiv.innerHTML = originalHtml;
+};
+
+window.saveEditComment = async function (postId, commentId) {
+    const newContent = document.getElementById(`edit-input-${commentId}`).value.trim();
+    if (!newContent) return;
+
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/posts/comments/${commentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ content: newContent })
+        });
+        if (res.ok) {
+            fetchComments(postId);
+        } else {
+            const data = await res.json();
+            alert(data.message || 'Lỗi khi cập nhật bình luận');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+window.deleteComment = async function (postId, commentId) {
+    const confirmMessage = 'Bạn có chắc chắn muốn xóa bình luận này?';
+    const action = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                // Optimistic UI update: giảm số bình luận
+                const commentCountSpan = document.getElementById(`comment-count-${postId}`);
+                if (commentCountSpan) {
+                    const countMatch = commentCountSpan.innerText.match(/\d+/);
+                    let currentCount = countMatch ? parseInt(countMatch[0], 10) : 0;
+                    if (currentCount > 0) {
+                        commentCountSpan.innerText = `Bình luận (${currentCount - 1})`;
+                    }
+                }
+                fetchComments(postId);
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Lỗi khi xóa bình luận');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    if (typeof showConfirmModal === 'function') {
+        showConfirmModal('Xóa bình luận', confirmMessage, action);
+    } else {
+        if (confirm(confirmMessage)) {
+            action();
+        }
+    }
+};
 
 // === FRIENDSHIP START ===
 function sendFriendRequest(id) {

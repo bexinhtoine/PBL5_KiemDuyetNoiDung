@@ -44,10 +44,17 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     List<Report> findByComment(Comment comment);
 
-    /** Lấy danh sách report theo community (qua bài viết) */
-    @Query("SELECT r FROM Report r WHERE r.post.community.id = :communityId AND r.reportTarget = 'COMMUNITY' ORDER BY r.createdAt DESC")
+    /** Lấy danh sách report theo community (qua bài viết hoặc bình luận) */
+    @Query("SELECT r FROM Report r WHERE " +
+           "((r.post IS NOT NULL AND r.post.community.id = :communityId) OR " +
+           " (r.comment IS NOT NULL AND r.comment.post.community.id = :communityId)) " +
+           "AND r.reportTarget = 'COMMUNITY' " +
+           "ORDER BY r.createdAt DESC")
     List<Report> findByCommunityId(@Param("communityId") Long communityId);
 
-    @Query("SELECT COUNT(r) FROM Report r WHERE r.post.community.id = :communityId AND r.reportTarget = 'COMMUNITY' AND r.createdAt >= :date")
+    @Query("SELECT COUNT(r) FROM Report r WHERE " +
+           "((r.post IS NOT NULL AND r.post.community.id = :communityId) OR " +
+           " (r.comment IS NOT NULL AND r.comment.post.community.id = :communityId)) " +
+           "AND r.reportTarget = 'COMMUNITY' AND r.createdAt >= :date")
     long countByCommunityIdAndCreatedAtAfter(@Param("communityId") Long communityId, @Param("date") java.time.LocalDateTime date);
 }

@@ -114,6 +114,7 @@ function closePostDetailModal() {
 }
 
 function renderPostDetailInModal(post, overlay) {
+    window.currentModalPostId = post.id;
     const isMine = post.mine || post.isMine;
     const status = String(post.status || '').toUpperCase();
     const isRejected = status === 'REJECTED' || status === 'AUTO_REJECTED' || status === 'REJECTED_BY_AI';
@@ -301,7 +302,7 @@ function renderPostDetailInModal(post, overlay) {
                     </div>
                     <div>
                         <div class="user-fullname">${post.authorName}</div>
-                        <div style="font-size:12px;color:var(--text-muted, #d0d6e0);">@tác_giả • ${timeSinceInModal(post.createdAt)}</div>
+                        <div style="font-size:12px;color:var(--text-muted, #d0d6e0);">@tác_giả • ${timeSinceInModal(post.createdAt)}${post.edited ? ' <span style="font-size:11px;color:var(--text-muted);margin-left:5px;">(đã chỉnh sửa)</span>' : ''}</div>
                     </div>
                     <div style="margin-left:auto;">
                         <span class="badge" style="background: var(--comment-bg); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; font-size: 11px; border: 1px solid var(--border-color-solid);">${visibilityLabel}</span>
@@ -358,7 +359,7 @@ async function fetchCommentsForModal(postId) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const comments = await res.json();
-        renderCommentsForModal(comments);
+        renderCommentsForModal(comments, postId);
     } catch (err) {
         console.error("Lỗi lấy bình luận trong modal:", err);
         const list = document.getElementById('modal-comments-list');
@@ -366,7 +367,7 @@ async function fetchCommentsForModal(postId) {
     }
 }
 
-function renderCommentsForModal(comments) {
+function renderCommentsForModal(comments, postId) {
     const list = document.getElementById('modal-comments-list');
     if (!list) return;
 
@@ -378,19 +379,34 @@ function renderCommentsForModal(comments) {
     list.innerHTML = `<div class="comments-title"><i class="fa-solid fa-comment"></i> Bình luận (${comments.length})</div>` +
         comments.map(c => {
             const avatar = c.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName)}&background=5e6ad2&color=fff`;
+            const isMine = c.isMine || c.mine || false;
+            const createdAtDate = new Date(c.createdAt);
+            const now = new Date();
+            const diffMinutes = (now - createdAtDate) / (1000 * 60);
+
+            let actionsHtml = '';
+            if (isMine) {
+                const editSpan = diffMinutes < 30 ? `<span onclick="startEditCommentInModal(${c.id}, '${c.content ? c.content.replace(/'/g, "\\'") : ''}')" style="color: var(--text-muted, #d0d6e0); cursor: pointer; font-weight: 600; font-size: 11px; margin-right: 10px;">Sửa</span>` : '';
+                const deleteSpan = `<span onclick="deleteCommentInModal(${c.id})" style="color: var(--text-muted, #d0d6e0); cursor: pointer; font-weight: 600; font-size: 11px;">Xóa</span>`;
+                actionsHtml = `<div style="margin-top: 4px;">${editSpan}${deleteSpan}</div>`;
+            }
+
+            const editedText = c.edited ? ' <span style="font-size:10px;color:var(--text-muted);margin-left:5px;">(đã chỉnh sửa)</span>' : '';
+
             return `
-                <div class="comment-item">
+                <div class="comment-item" id="modal-comment-container-${c.id}">
                     <div class="comment-avatar">
                         <img src="${avatar}" alt="">
                     </div>
-                    <div class="comment-body">
+                    <div class="comment-body" style="flex: 1;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <span class="comment-author">${c.authorName}</span>
-                                <span class="comment-time">${timeSinceInModal(c.createdAt)}</span>
+                                <span class="comment-time">${timeSinceInModal(c.createdAt)}${editedText}</span>
                             </div>
                         </div>
-                        <div class="comment-text">${c.content || ''}</div>
+                        <div class="comment-text" id="modal-comment-content-${c.id}" style="white-space: pre-wrap;">${escapeHtml(c.content || '')}</div>
+                        ${actionsHtml}
                     </div>
                 </div>
             `;
@@ -529,3 +545,109 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     }
 });
+
+window.startEditCommentInModal = function (commentId, currentContent) {
+    const contentDiv = document.getElementById(`modal-comment-content-${commentId}`);
+    if (!contentDiv) return;
+    const originalHtml = contentDiv.innerHTML;
+
+    contentDiv.innerHTML = `
+        <div style="margin-top: 5px;">
+            <textarea id="modal-edit-input-${commentId}" style="width: 100%; border: 1px solid var(--border-color-solid, #23252a); background: var(--comment-bg, #0f1011); color: var(--text-main, #f7f8f8); border-radius: 8px; padding: 5px; outline: none; font-size: 14px; font-family: inherit;">${currentContent}</textarea>
+            <div style="display: flex; gap: 5px; margin-top: 5px; justify-content: flex-end;">
+                <button onclick="cancelEditCommentInModal(${commentId}, \`${originalHtml.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="background: var(--comment-bg, #0f1011); color: var(--text-main, #f7f8f8); border: 1px solid var(--border-color-solid, #23252a); padding: 3px 8px; border-radius: 5px; font-size: 12px; cursor: pointer;">Hủy</button>
+                <button onclick="saveEditCommentInModal(${commentId})" style="background: var(--accent-blue, #5e6ad2); color: white; border: none; padding: 3px 8px; border-radius: 5px; font-size: 12px; cursor: pointer;">Lưu</button>
+            </div>
+        </div>
+    `;
+};
+
+window.cancelEditCommentInModal = function (commentId, originalHtml) {
+    const contentDiv = document.getElementById(`modal-comment-content-${commentId}`);
+    if (contentDiv) contentDiv.innerHTML = originalHtml;
+};
+
+window.saveEditCommentInModal = async function (commentId) {
+    const inputEl = document.getElementById(`modal-edit-input-${commentId}`);
+    if (!inputEl) return;
+    const newContent = inputEl.value.trim();
+    if (!newContent) return;
+
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`/api/posts/comments/${commentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ content: newContent })
+        });
+        if (res.ok) {
+            if (window.currentModalPostId) {
+                fetchCommentsForModal(window.currentModalPostId);
+            }
+        } else {
+            const data = await res.json();
+            alert(data.message || 'Lỗi khi cập nhật bình luận');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+window.deleteCommentInModal = async function (commentId) {
+    const confirmMessage = 'Bạn có chắc chắn muốn xóa bình luận này?';
+    const action = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const postId = window.currentModalPostId;
+                if (postId) {
+                    // Optimistic/Sync UI update: giảm số bình luận trong modal badge
+                    const countBadge = document.getElementById('modal-comments-count-badge');
+                    if (countBadge) {
+                        let currentCount = parseInt(countBadge.innerText) || 0;
+                        countBadge.innerText = Math.max(0, currentCount - 1);
+                    }
+
+                    // Sync comment count on home feed post item if it exists
+                    const feedCommentCount = document.getElementById(`comment-count-${postId}`);
+                    if (feedCommentCount) {
+                        let currentCount = parseInt(feedCommentCount.innerText.match(/\d+/)[0]) || 0;
+                        feedCommentCount.innerText = `Bình luận (${Math.max(0, currentCount - 1)})`;
+                    }
+
+                    fetchCommentsForModal(postId);
+                }
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Lỗi khi xóa bình luận');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    if (typeof showConfirmModal === 'function') {
+        showConfirmModal('Xóa bình luận', confirmMessage, action);
+    } else {
+        if (confirm(confirmMessage)) {
+            action();
+        }
+    }
+};
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/\n/g, "<br>");
+}

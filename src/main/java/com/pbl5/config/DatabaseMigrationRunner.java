@@ -38,8 +38,27 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
             jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_likes_post_user ON likes(post_id, user_id);");
             jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_comment_likes_comment_user ON comment_likes(comment_id, user_id);");
             logger.info("Successfully created all optimized indexes.");
+
+            logger.info("Synchronizing PostgreSQL identity sequences...");
+            String[] tables = {
+                "users", "posts", "comments", "likes", "comment_likes", 
+                "friendships", "messages", "notifications", "reports", 
+                "communities", "community_members", "bookmarks", "hidden_posts"
+            };
+            for (String table : tables) {
+                syncSequence(table);
+            }
         } catch (Exception e) {
             logger.warn("Database migration/optimization warning: {}", e.getMessage());
+        }
+    }
+
+    private void syncSequence(String tableName) {
+        try {
+            jdbcTemplate.execute("SELECT setval(pg_get_serial_sequence('" + tableName + "', 'id'), COALESCE(MAX(id), 1)) FROM " + tableName + ";");
+            logger.info("Successfully synchronized sequence for table: {}", tableName);
+        } catch (Exception e) {
+            logger.warn("Could not sync sequence for table {}: {}", tableName, e.getMessage());
         }
     }
 }

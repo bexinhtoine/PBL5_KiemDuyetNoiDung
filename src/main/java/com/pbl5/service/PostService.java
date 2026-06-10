@@ -158,6 +158,116 @@ public class PostService {
     }
 
     /**
+     * Cập nhật bài đăng và chạy kiểm duyệt lại nếu nội dung/media thay đổi
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public PostResponse updatePost(Long postId, CreatePostRequest request, User user) {
+        if (user.getPostWarningExpiresAt() != null
+                && user.getPostWarningExpiresAt().isAfter(java.time.LocalDateTime.now())) {
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
+                    .ofPattern("HH:mm 'ngày' dd/MM/yyyy");
+            String expiryStr = user.getPostWarningExpiresAt().format(formatter);
+            throw new IllegalStateException("Bạn đang bị cấm đăng bài do vi phạm. Vui lòng quay lại sau " + expiryStr);
+        }
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài viết."));
+
+        if (!post.getUser().getId().equals(user.getId())) {
+            throw new IllegalStateException("Bạn không có quyền chỉnh sửa bài viết này.");
+        }
+
+        boolean hasContent = request.getContent() != null && !request.getContent().trim().isEmpty();
+        boolean hasMedia = (request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty())
+                || (request.getVideoUrl() != null && !request.getVideoUrl().trim().isEmpty());
+        if (!hasContent && !hasMedia) {
+            throw new IllegalArgumentException("Nội dung bài đăng không được trống.");
+        }
+
+        // Check if content/media changed to trigger moderation
+        boolean contentChanged = !java.util.Objects.equals(post.getContent(), request.getContent())
+                || !java.util.Objects.equals(post.getImageUrl(), request.getImageUrl())
+                || !java.util.Objects.equals(post.getVideoUrl(), request.getVideoUrl());
+
+        post.setContent(request.getContent());
+        post.setImageUrl(request.getImageUrl());
+        post.setVideoUrl(request.getVideoUrl());
+
+        // Update visibility
+        if (request.getVisibility() != null) {
+            try {
+                post.setVisibility(PostVisibility.valueOf(request.getVisibility().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // Keep existing or PUBLIC
+            }
+        }
+
+        // If post belongs to a community, update tags
+        if (post.getCommunity() != null) {
+            // Re-apply community rules on visibility (must match privacy)
+            post.setVisibility(post.getCommunity().getIsPrivate() ? PostVisibility.PRIVATE : PostVisibility.PUBLIC);
+
+            if (request.getTags() != null) {
+                if (request.getTags().isEmpty()) {
+                    post.setTags(new java.util.ArrayList<>());
+                } else {
+                    List<com.pbl5.model.CommunityTag> communityTags = communityTagRepository
+                            .findByCommunityIdAndNameIn(post.getCommunity().getId(), request.getTags());
+                    post.setTags(communityTags);
+                }
+            }
+        }
+
+        post.setEdited(true);
+        post.setUpdatedAt(java.time.LocalDateTime.now());
+
+        if (contentChanged) {
+            // Reset moderation parameters
+            post.setBestScore(0.0);
+            post.setNsfwScore(0.0);
+            post.setViolenceScore(0.0);
+            post.setHateSpeechScore(0.0);
+            post.setNsfwBox(null);
+            post.setViolenBox(null);
+            post.setHateSpeechWord("(Video:) (Content:)");
+            post.setViolationRate(0.0);
+
+            // Determine new status
+            PostStatus newStatus;
+            boolean triggerAiImmediately = true;
+
+            if (post.getCommunity() == null) {
+                newStatus = PostStatus.ACTIVE;
+            } else if (post.getCommunity().getRequirePostApproval() != null
+                    && post.getCommunity().getRequirePostApproval()) {
+                newStatus = PostStatus.PENDING_COMM_ADMIN;
+                triggerAiImmediately = false;
+            } else {
+                newStatus = PostStatus.PENDING_REVIEW;
+            }
+
+            post.setStatus(newStatus);
+            post = postRepository.save(post);
+
+            if (triggerAiImmediately) {
+                try {
+                    moderationService.moderatePostAsync(
+                            post.getId(),
+                            request.getContent(),
+                            request.getImageUrl(),
+                            request.getVideoUrl());
+                } catch (Exception e) {
+                    System.err.println("Không thể khởi chạy kiểm duyệt nền bài viết sửa " + post.getId() + ": " + e.getMessage());
+                }
+            }
+        } else {
+            post = postRepository.save(post);
+        }
+
+        return convertToResponse(post, user);
+    }
+
+    /**
      * Convert Post entity thành PostResponse
      */
     public PostResponse convertToResponse(Post post, User user) {
@@ -192,6 +302,8 @@ public class PostService {
         response.setHateSpeechVideoScore(post.getHateSpeechVideoScore());
         response.setHateSpeechWord(post.getHateSpeechWord());
         response.setPinned(post.isPinned());
+        response.setEdited(post.isEdited());
+        response.setUpdatedAt(post.getUpdatedAt());
         if (post.getCommunity() != null) {
             response.setCommunityId(post.getCommunity().getId());
             response.setCommunityName(post.getCommunity().getName());

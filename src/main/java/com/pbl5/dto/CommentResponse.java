@@ -44,4 +44,12 @@ public class CommentResponse {
     public void setLiked(boolean isLiked) { this.isLiked = isLiked; }
     public java.util.List<CommentResponse> getReplies() { return replies; }
     public void setReplies(java.util.List<CommentResponse> replies) { this.replies = replies; }
+
+    private boolean edited;
+    private LocalDateTime updatedAt;
+
+    public boolean isEdited() { return edited; }
+    public void setEdited(boolean edited) { this.edited = edited; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

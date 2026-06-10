@@ -558,8 +558,6 @@ public class AdminController {
 
         if (userRepository.existsByEmail(email))
             return ResponseEntity.status(409).body("Email đã được sử dụng");
-        if (userRepository.existsByFullName(fullName))
-            return ResponseEntity.status(409).body("Tên hiển thị đã được sử dụng");
         if (username != null && !username.isBlank() && userRepository.existsByUsername(username)) {
             return ResponseEntity.status(409).body("Tên đăng nhập đã được sử dụng");
         }

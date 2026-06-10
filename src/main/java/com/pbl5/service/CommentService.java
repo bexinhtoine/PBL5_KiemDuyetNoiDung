@@ -74,6 +74,8 @@ public class CommentService {
                     c.getCreatedAt(), isMine, c.getImageUrl(), c.getVideoUrl());
             resp.setLikeCount(likeCountsMap.getOrDefault(c.getId(), 0L));
             resp.setLiked(likedCommentIdsSet.contains(c.getId()));
+            resp.setEdited(c.isEdited());
+            resp.setUpdatedAt(c.getUpdatedAt());
 
             responseMap.put(c.getId(), resp);
         }
@@ -189,6 +191,8 @@ public class CommentService {
         comment.setContent(request.getContent() != null ? request.getContent().trim() : null);
         comment.setImageUrl(request.getImageUrl());
         comment.setVideoUrl(request.getVideoUrl());
+        comment.setEdited(true);
+        comment.setUpdatedAt(LocalDateTime.now());
         commentRepository.save(comment);
     }
 

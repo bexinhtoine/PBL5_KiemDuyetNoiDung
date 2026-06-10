@@ -22,44 +22,6 @@ window.onload = () => {
     fetchSidebarSuggestions(token);
 };
 
-// Unified Confirmation Modal for User
-function showUnifiedLogoutConfirm(title, message, onConfirm) {
-    const oldPopup = document.getElementById('unified-confirm-popup');
-    if (oldPopup) oldPopup.remove();
-
-    const popupHtml = `
-        <div id="unified-confirm-popup" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 999999;">
-            <div style="background: var(--card-bg, var(--surface-bg, #ffffff)); border-radius: 8px; padding: 25px; min-width: 350px; max-width: 450px; text-align: center; box-shadow: var(--card-shadow, 0 10px 25px rgba(0,0,0,0.15)); color: var(--text-color, var(--text-primary, #212121)); border: 1px solid var(--border-color, #dbdbdb); border-top: 4px solid #10b981;">
-                <i class="fa-solid fa-circle-question" style="font-size: 45px; color: #10b981; margin-bottom: 20px;"></i>
-                <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700;">${title}</h3>
-                <p style="margin: 0 0 25px 0; font-size: 15px; color: var(--text-muted, var(--text-secondary, #666)); line-height: 1.5;">${message}</p>
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button id="unified-confirm-no" style="background: var(--bg-color, var(--bg-main, #f5f5f5)); color: var(--text-color, var(--text-primary, #212121)); border: 1px solid var(--border-color, #dbdbdb); padding: 10px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1; transition: all 0.2s;">Hủy bỏ</button>
-                    <button id="unified-confirm-yes" style="background: #10b981; color: #fff; border: none; padding: 10px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1; transition: all 0.2s;">Xác nhận</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', popupHtml);
-
-    const yesBtn = document.getElementById('unified-confirm-yes');
-    const noBtn = document.getElementById('unified-confirm-no');
-    
-    yesBtn.onmouseover = () => { yesBtn.style.opacity = '0.9'; };
-    yesBtn.onmouseout = () => { yesBtn.style.opacity = '1'; };
-    
-    noBtn.onmouseover = () => { noBtn.style.background = '#e8e8e8'; };
-    noBtn.onmouseout = () => { noBtn.style.background = 'var(--bg-color, var(--bg-main, #f5f5f5))'; };
-
-    document.getElementById('unified-confirm-yes').onclick = () => {
-        document.getElementById('unified-confirm-popup').remove();
-        if (onConfirm) onConfirm();
-    };
-    document.getElementById('unified-confirm-no').onclick = () => {
-        document.getElementById('unified-confirm-popup').remove();
-    };
-}
-
 // Logout Function
 window.logout = function () {
     showUnifiedLogoutConfirm(
@@ -287,7 +249,7 @@ function prependCreatedPostToFeed(post) {
                 </a>
                 <div class="post-meta">
                     <h4 class="post-author">${authorHtml}</h4>
-                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">Vừa xong</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
+                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">Vừa xong</a> ${post.edited ? '<span style="font-size:11px;color:var(--text-muted);margin-left:5px;">(đã chỉnh sửa)</span>' : ''} <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
 
@@ -300,6 +262,8 @@ function prependCreatedPostToFeed(post) {
                         <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'PUBLIC')"><i class="fa-solid fa-earth-americas"></i> Công khai</a>
                         <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'FRIENDS')"><i class="fa-solid fa-user-group"></i> Chỉ bạn bè</a>
                         <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'PRIVATE')"><i class="fa-solid fa-lock"></i> Chỉ mình tôi</a>
+                        <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
+                        <a href="javascript:void(0)" onclick="startEditPost(${post.id})"><i class="fa-regular fa-pen-to-square"></i> Chỉnh sửa bài viết</a>
                         <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
                         <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
                     ` : `
@@ -480,6 +444,8 @@ function renderPosts(posts, token) {
                     <a href="javascript:void(0)" onclick="toggleBookmark(${post.id})"><i class="fa-regular fa-bookmark"></i> Lưu bài viết</a>
                     <a href="javascript:void(0)" onclick="hidePost(${post.id})"><i class="fa-solid fa-eye-slash"></i> Ẩn bài viết</a>
                     <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
+                    <a href="javascript:void(0)" onclick="startEditPost(${post.id})"><i class="fa-regular fa-pen-to-square"></i> Chỉnh sửa bài viết</a>
+                    <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
                     <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
                 `;
             } else {
@@ -487,6 +453,8 @@ function renderPosts(posts, token) {
                     <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'PUBLIC')"><i class="fa-solid fa-earth-americas"></i> Công khai</a>
                     <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'FRIENDS')"><i class="fa-solid fa-user-group"></i> Chỉ bạn bè</a>
                     <a href="javascript:void(0)" onclick="changeVisibility(${post.id}, 'PRIVATE')"><i class="fa-solid fa-lock"></i> Chỉ mình tôi</a>
+                    <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
+                    <a href="javascript:void(0)" onclick="startEditPost(${post.id})"><i class="fa-regular fa-pen-to-square"></i> Chỉnh sửa bài viết</a>
                     <div style="height: 1px; background: #e4e6eb; margin: 4px 0;"></div>
                     <a href="javascript:void(0)" onclick="deletePost(${post.id})" style="color: var(--red-icon);"><i class="fa-regular fa-trash-can"></i> Xóa bài viết</a>
                 `;
@@ -516,7 +484,7 @@ function renderPosts(posts, token) {
                 </a>
                 <div class="post-meta">
                     <h4 class="post-author">${authorHtml}</h4>
-                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
+                    <span class="post-time"><a href="javascript:void(0)" onclick="showPostDetailModal(${post.id})" style="text-decoration:none; color:inherit;">${timeSince(post.createdAt)}</a> ${post.edited ? '<span style="font-size:11px;color:var(--text-muted);margin-left:5px;">(đã chỉnh sửa)</span>' : ''} <span id="visibility-icon-${post.id}">${visibilityIcon}</span></span>
                 </div>
             </div>
             
@@ -1109,7 +1077,7 @@ function renderCommentItem(c, postId, isReply = false) {
             ${c.isMine && diffMinutes < 30 ? `<span onclick="startEditComment(${postId}, ${c.id}, '${c.content ? c.content.replace(/'/g, "\\'") : ''}')" style="color: #65676b; cursor: pointer; font-weight: 600;">Sửa</span>` : ''}
             ${c.isMine ? `<span onclick="deleteComment(${postId}, ${c.id})" style="color: #65676b; cursor: pointer; font-weight: 600;">Xóa</span>` : ''}
             ${!c.isMine ? `<span onclick="reportComment(${c.id})" style="color: #65676b; cursor: pointer; font-weight: 600;" title="Báo cáo bình luận"><i class="fa-regular fa-flag"></i></span>` : ''}
-            <span style="color: #65676b; font-size: 11px;">${timeStr}</span>
+            <span style="color: #65676b; font-size: 11px;">${timeStr}${c.edited ? ' (đã chỉnh sửa)' : ''}</span>
         </div>
     `;
 
@@ -1278,7 +1246,8 @@ async function submitComment(postId) {
                 commentCountSpan.innerText = `Bình luận (${currentCount + 1})`;
             }
         } else {
-            alert('Lỗi gửi bình luận');
+            const errorMsg = await res.text();
+            alert(errorMsg || 'Lỗi gửi bình luận');
         }
     } catch (err) {
         console.error(err);

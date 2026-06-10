@@ -3,7 +3,9 @@ package com.pbl5.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 @Entity
-@Table(name = "hidden_posts")
+@Table(name = "hidden_posts", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "post_id"})
+})
 public class HiddenPost {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

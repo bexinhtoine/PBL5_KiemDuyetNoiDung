@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "comment_likes")
+@Table(name = "comment_likes", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"comment_id", "user_id"})
+})
 public class CommentLike {
 
     @Id

@@ -116,8 +116,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                      "      ))" +
                      "    )" +
                      "  )" +
-                     ") " +
-                     "ORDER BY p.createdAt DESC")
+                     ")")
        List<Post> findHomeFeedPaged(
                      @Param("currentUserId") Long currentUserId,
                      @Param("isAdminOrMod") boolean isAdminOrMod,

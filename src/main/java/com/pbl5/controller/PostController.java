@@ -13,6 +13,7 @@ import com.pbl5.model.Post;
 import com.pbl5.model.User;
 import com.pbl5.model.Like;
 import com.pbl5.model.Comment;
+import com.pbl5.model.CommunityMember;
 import com.pbl5.repository.CommentRepository;
 import com.pbl5.repository.LikeRepository;
 import com.pbl5.enums.FriendshipStatus;
@@ -219,62 +220,12 @@ public class PostController {
 
         boolean isAdminOrMod = currentUser.getRole() == com.pbl5.enums.Role.ADMIN
                 || currentUser.getRole() == com.pbl5.enums.Role.MODERATOR;
-        PageRequest pageable = PageRequest.of(page, size);
+        PageRequest pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"));
 
-        // 1. Bài viết feed chính (cộng đồng, admin feed)
+        // Fetch feed posts paged directly from the database using a single optimized query
         List<Post> feedPosts = postRepository.findHomeFeedPaged(currentUser.getId(), isAdminOrMod, pageable);
 
-        // 2. Bài viết cá nhân PUBLIC từ người dùng khác (query riêng, tránh bug JOIN
-        // FETCH + Pageable)
-        List<Post> publicPersonalPosts = postRepository.findPublicPersonalPostsForFeed(
-                currentUser.getId(), PageRequest.of(0, 50));
-
-        // 3. Bài viết cá nhân FRIENDS từ bạn bè đã kết bạn
-        List<Post> friendsPersonalPosts = postRepository.findFriendsPersonalPostsForFeed(
-                currentUser.getId(), PageRequest.of(0, 50));
-
-        // 4. Bài viết của bản thân (đảm bảo luôn hiện bài cá nhân của mình)
-        List<Post> myPosts = postRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId(),
-                PageRequest.of(0, 100));
-        myPosts = myPosts.stream()
-                .filter(p -> p.getStatus() != PostStatus.DELETED)
-                .collect(Collectors.toList());
-
-        // Hợp nhất, tránh trùng lặp
-        Set<Long> seen = new HashSet<>();
-        List<Post> merged = new ArrayList<>();
-        for (Post p : feedPosts) {
-            if (seen.add(p.getId()))
-                merged.add(p);
-        }
-        for (Post p : publicPersonalPosts) {
-            if (seen.add(p.getId()))
-                merged.add(p);
-        }
-        for (Post p : friendsPersonalPosts) {
-            if (seen.add(p.getId()))
-                merged.add(p);
-        }
-        for (Post p : myPosts) {
-            if (seen.add(p.getId()))
-                merged.add(p);
-        }
-
-        // Sắp xếp theo thời gian tạo mới nhất
-        merged.sort((a, b) -> {
-            if (a.getCreatedAt() == null)
-                return 1;
-            if (b.getCreatedAt() == null)
-                return -1;
-            return b.getCreatedAt().compareTo(a.getCreatedAt());
-        });
-
-        // Phân trang thủ công
-        int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, merged.size());
-        List<Post> paged = (fromIndex < merged.size()) ? merged.subList(fromIndex, toIndex) : new ArrayList<>();
-
-        List<PostResponse> responses = convertToResponses(paged, currentUser);
+        List<PostResponse> responses = convertToResponses(feedPosts, currentUser);
         return ResponseEntity.ok(responses);
     }
 
@@ -385,6 +336,7 @@ public class PostController {
 
         // Soft delete: thay đổi trạng thái sang DELETED thay vì xóa khỏi CSDL
         post.setStatus(PostStatus.DELETED);
+        post.setUpdatedAt(java.time.LocalDateTime.now());
         postRepository.save(post);
 
         // Ghi log hoạt động nếu gỡ bởi admin nhóm
@@ -621,11 +573,17 @@ public class PostController {
             }
         }
 
+        String reportTarget = body.get("reportTarget");
+        if (reportTarget == null || (!reportTarget.equals("SYSTEM") && !reportTarget.equals("COMMUNITY"))) {
+            reportTarget = "SYSTEM";
+        }
+
         Report report = new Report();
         report.setUser(user);
         report.setComment(comment);
         report.setReason(reason.trim());
         report.setCategory(category);
+        report.setReportTarget(reportTarget);
         reportRepository.save(report);
 
         return ResponseEntity.ok("Đã gửi báo cáo bình luận thành công.");
@@ -678,6 +636,63 @@ public class PostController {
         messagingTemplate.convertAndSend("/topic/notifications/" + recipient.getId(), notification);
     }
 
+    private boolean canViewPost(Post p, User currentUser, Map<Long, Friendship> friendshipMap, Map<Long, com.pbl5.enums.CommunityRole> communityRoleMap) {
+        if (p == null || p.getUser() == null || currentUser == null) {
+            return false;
+        }
+
+        // Handle deleted/rejected/AI rejected posts: allowed for admins, moderators, and the author
+        if (p.getStatus() == com.pbl5.enums.PostStatus.REJECTED
+                || p.getStatus() == com.pbl5.enums.PostStatus.AUTO_REJECTED
+                || p.getStatus() == com.pbl5.enums.PostStatus.REJECTED_BY_AI) {
+            if (currentUser.getRole() == com.pbl5.enums.Role.ADMIN
+                    || currentUser.getRole() == com.pbl5.enums.Role.MODERATOR) {
+                return true;
+            }
+            if (p.getUser().getId().equals(currentUser.getId())) {
+                return true;
+            }
+            return false;
+        }
+
+        // Author can always see their own posts
+        if (p.getUser().getId().equals(currentUser.getId()))
+            return true;
+
+        // Admins and moderators can see all posts
+        if (currentUser.getRole() == com.pbl5.enums.Role.ADMIN
+                || currentUser.getRole() == com.pbl5.enums.Role.MODERATOR)
+            return true;
+
+        // Community Owner/Admin can see pending posts of their community
+        if (p.getCommunity() != null) {
+            if (p.getStatus() == com.pbl5.enums.PostStatus.PENDING_COMM_ADMIN
+                    || p.getStatus() == com.pbl5.enums.PostStatus.PENDING_REVIEW) {
+                com.pbl5.enums.CommunityRole role = communityRoleMap.get(p.getCommunity().getId());
+                boolean isCommAdminOrOwner = role == com.pbl5.enums.CommunityRole.OWNER
+                        || role == com.pbl5.enums.CommunityRole.ADMIN;
+                if (isCommAdminOrOwner)
+                    return true;
+            }
+        }
+
+        // Other users should NOT see pending or deleted posts
+        if (p.getStatus() == com.pbl5.enums.PostStatus.PENDING_COMM_ADMIN
+                || p.getStatus() == com.pbl5.enums.PostStatus.DELETED) {
+            return false;
+        }
+
+        if (p.getVisibility() == PostVisibility.PUBLIC || p.getVisibility() == null)
+            return true;
+        if (p.getVisibility() == PostVisibility.PRIVATE)
+            return false;
+        if (p.getVisibility() == PostVisibility.FRIENDS) {
+            Friendship f = friendshipMap.get(p.getUser().getId());
+            return f != null && f.getStatus() == FriendshipStatus.ACCEPTED;
+        }
+        return false;
+    }
+
     private List<PostResponse> convertToResponses(List<Post> posts, User currentUser) {
         if (posts == null || posts.isEmpty()) {
             return new ArrayList<>();
@@ -704,10 +719,42 @@ public class PostController {
             likedPostIdsSet.addAll(likeRepository.findLikedPostIdsByUser(postIds, currentUser.getId()));
         }
 
+        // Pre-fetch friendships to prevent N+1 queries
+        Map<Long, Friendship> friendshipMap = new HashMap<>();
+        if (currentUser != null) {
+            List<User> partners = posts.stream()
+                    .map(Post::getUser)
+                    .filter(u -> u != null && !u.getId().equals(currentUser.getId()))
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (!partners.isEmpty()) {
+                List<Friendship> friendships = friendshipRepository.findFriendshipsBetweenUserAndPartners(currentUser, partners);
+                for (Friendship f : friendships) {
+                    Long otherUserId = f.getRequester().getId().equals(currentUser.getId()) 
+                            ? f.getReceiver().getId() 
+                            : f.getRequester().getId();
+                    friendshipMap.put(otherUserId, f);
+                }
+            }
+        }
+
+        // Pre-fetch community memberships to prevent N+1 queries
+        Map<Long, com.pbl5.enums.CommunityRole> communityRoleMap = new HashMap<>();
+        Map<Long, com.pbl5.enums.CommunityMemberStatus> communityStatusMap = new HashMap<>();
+        if (currentUser != null) {
+            List<com.pbl5.model.CommunityMember> userMemberships = communityMemberRepository.findByUserId(currentUser.getId());
+            for (com.pbl5.model.CommunityMember cm : userMemberships) {
+                if (cm.getCommunity() != null) {
+                    communityRoleMap.put(cm.getCommunity().getId(), cm.getRole());
+                    communityStatusMap.put(cm.getCommunity().getId(), cm.getStatus());
+                }
+            }
+        }
+
         List<PostResponse> responses = new ArrayList<>();
         for (Post post : posts) {
             try {
-                if (canViewPost(post, currentUser)) {
+                if (canViewPost(post, currentUser, friendshipMap, communityRoleMap)) {
                     long likeCount = likeCountsMap.getOrDefault(post.getId(), 0L);
                     long commentCount = commentCountsMap.getOrDefault(post.getId(), 0L);
                     boolean isLiked = likedPostIdsSet.contains(post.getId());
@@ -756,9 +803,8 @@ public class PostController {
                         resp.setCommunityId(post.getCommunity().getId());
                         resp.setCommunityName(post.getCommunity().getName());
                         if (currentUser != null) {
-                            boolean isMember = communityMemberRepository.existsByCommunityIdAndUserIdAndStatus(
-                                    post.getCommunity().getId(), currentUser.getId(),
-                                    com.pbl5.enums.CommunityMemberStatus.ACTIVE);
+                            com.pbl5.enums.CommunityMemberStatus status = communityStatusMap.get(post.getCommunity().getId());
+                            boolean isMember = status == com.pbl5.enums.CommunityMemberStatus.ACTIVE;
                             resp.setJoinedCommunity(isMember);
                         } else {
                             resp.setJoinedCommunity(false);
@@ -770,10 +816,9 @@ public class PostController {
                         if (post.getUser().getId().equals(currentUser.getId())) {
                             resp.setFriendshipStatus("MINE");
                         } else {
-                            java.util.Optional<com.pbl5.model.Friendship> friendshipOpt = friendshipRepository
-                                    .findByUsers(currentUser, post.getUser());
-                            if (friendshipOpt.isPresent()) {
-                                resp.setFriendshipStatus(friendshipOpt.get().getStatus().name());
+                            Friendship f = friendshipMap.get(post.getUser().getId());
+                            if (f != null) {
+                                                    resp.setFriendshipStatus(f.getStatus().name());
                             } else {
                                 resp.setFriendshipStatus("NONE");
                             }
@@ -781,6 +826,8 @@ public class PostController {
                     } else {
                         resp.setFriendshipStatus("NONE");
                     }
+                    resp.setEdited(post.isEdited());
+                    resp.setUpdatedAt(post.getUpdatedAt());
                     responses.add(resp);
                 }
             } catch (Exception e) {
@@ -894,6 +941,8 @@ public class PostController {
                 response.setBookmarkedByCurrentUser(false);
             }
         }
+        response.setEdited(post.isEdited());
+        response.setUpdatedAt(post.getUpdatedAt());
 
         return response;
     }
@@ -961,6 +1010,25 @@ public class PostController {
         List<Post> searchResults = postRepository.searchPosts(query.trim());
         List<PostResponse> results = convertToResponses(searchResults, user);
         return ResponseEntity.ok(results);
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity<?> updatePost(@PathVariable Long postId,
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody com.pbl5.dto.CreatePostRequest request) {
+        User user = getAuthenticatedUser(authHeader);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Chưa đăng nhập.");
+        }
+
+        try {
+            PostResponse postResponse = postService.updatePost(postId, request, user);
+            return ResponseEntity.ok(postResponse);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // ======================= DELETE/EDIT COMMENT =======================

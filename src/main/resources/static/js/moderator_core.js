@@ -902,8 +902,8 @@ function createToastContainer() {
 
 
 window.logout = function () {
-    if (typeof window.showCustomConfirm === 'function') {
-        window.showCustomConfirm(
+    if (typeof window.showUnifiedLogoutConfirm === 'function') {
+        window.showUnifiedLogoutConfirm(
             'Xác nhận đăng xuất', 
             'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống kiểm duyệt không?', 
             () => {

@@ -84,10 +84,6 @@ public class AuthService {
             throw new RuntimeException("Tên hiển thị không được bỏ trống");
         }
 
-        if (userRepository.existsByFullName(request.getFullName().trim())) {
-            throw new RuntimeException("Tên hiển thị đã có người sử dụng. Vui lòng chọn tên khác!");
-        }
-
         // Tạo mã PIN xác thực ngẫu nhiên 6 số
         String verifyCode = String.format("%06d", new java.util.Random().nextInt(999999));
         

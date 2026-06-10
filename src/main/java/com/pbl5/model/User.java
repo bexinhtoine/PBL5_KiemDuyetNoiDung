@@ -22,8 +22,8 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    /** Tên hiển thị của người dùng (Không được trùng lặp và không được để trống) */
-    @Column(nullable = false, unique = true)
+    /** Tên hiển thị của người dùng (Không được để trống) */
+    @Column(nullable = false)
     private String fullName;
 
     /** Mật khẩu đã được mã hóa (BCrypt). Có thể null nếu đăng nhập bằng Google OAuth2 */

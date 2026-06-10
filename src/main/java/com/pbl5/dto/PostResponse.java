@@ -269,4 +269,23 @@ public class PostResponse {
     public void setFriendshipStatus(String friendshipStatus) {
         this.friendshipStatus = friendshipStatus;
     }
+
+    private boolean edited;
+    private LocalDateTime updatedAt;
+
+    public boolean isEdited() {
+        return edited;
+    }
+
+    public void setEdited(boolean edited) {
+        this.edited = edited;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

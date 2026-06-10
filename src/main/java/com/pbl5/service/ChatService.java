@@ -85,6 +85,9 @@ public class ChatService {
 
         // 2. Tải toàn bộ thông tin User của đối tác trong 1 query
         List<User> partners = userRepository.findAllById(partnerIds);
+        if (partners.isEmpty()) {
+            return result;
+        }
         Map<Long, User> partnerMap = partners.stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
