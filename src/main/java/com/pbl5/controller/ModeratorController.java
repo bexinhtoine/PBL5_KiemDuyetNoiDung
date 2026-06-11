@@ -678,6 +678,7 @@ public class ModeratorController {
 
         User user = userOpt.get();
         user.setStatus(UserStatus.WARNING);
+        user.setScore(0);
 
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         if ("POST".equals(type)) {
@@ -716,6 +717,7 @@ public class ModeratorController {
 
         User user = userOpt.get();
         user.setStatus(UserStatus.BANNED);
+        user.setScore(0);
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "Đã khoá người dùng ID " + id));
     }

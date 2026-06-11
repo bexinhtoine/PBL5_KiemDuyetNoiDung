@@ -2542,3 +2542,21 @@
 [INIT] Successfully loaded PhoBERT Hate Speech model
 [INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
 [MAIN] Flask startup
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup
+[REQUEST] /api/moderate called
+[REQUEST] has_content=True has_image=False has_video=False
+[CONTENT] len=22 text='buổi sáng tốt lành nèo'
+[VIHSD_SPEECH] Post does not contain video/audio
+[OCR] content text='buổi sáng tốt lành nèo'
+[EVAL] label=CLEAN score=0.817491
+[FINAL TEXT] len=22 text='buổi sáng tốt lành nèo'
+[REQUEST] Complete best_score=0.0000 frames=0 violating_words=(Video:) (Content:)buổi[O] sáng[O] tốt[O] lành[O] nèo[O] detailed_tags=(Video:) (Content:)buổi[O] sáng[O] tốt[O] lành[O] nèo[O]
+[INIT] Successfully loaded NSFW model
+[INIT] Successfully loaded Violence model
+[INIT] Successfully loaded PhoBERT Hate Speech model
+[INIT] Successfully loaded and mapped MFCC hatespeech PyTorch model from weights dict
+[MAIN] Flask startup

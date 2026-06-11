@@ -140,6 +140,7 @@ public class AdminController {
             return ResponseEntity.status(403).body("Không thể khoá tài khoản Admin khác");
         }
         user.setStatus(UserStatus.BANNED);
+        user.setScore(0);
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "Đã khoá tài khoản người dùng ID " + id));
     }
@@ -209,6 +210,7 @@ public class AdminController {
 
         User user = userOpt.get();
         user.setStatus(UserStatus.WARNING);
+        user.setScore(0);
         
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         if ("POST".equals(type)) {
@@ -269,6 +271,7 @@ public class AdminController {
         }
         user.setStatus(UserStatus.BANNED);
         user.setLockExpiresAt(LocalDateTime.of(1970, 1, 1, 0, 0));
+        user.setScore(0);
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "Đã khóa tài khoản người dùng vĩnh viễn ID " + id));
     }
@@ -755,6 +758,7 @@ public class AdminController {
                 User violator = violatingPost.getUser();
                 if (violator != null && violator.getStatus() != UserStatus.BANNED) {
                     violator.setStatus(UserStatus.WARNING);
+                    violator.setScore(0);
                     
                     // Tự động gán thời hạn phạt 3 ngày
                     LocalDateTime now = LocalDateTime.now();
@@ -776,6 +780,7 @@ public class AdminController {
                 User commentAuthor = violatingComment.getUser();
                 if (commentAuthor != null && commentAuthor.getStatus() != UserStatus.BANNED) {
                     commentAuthor.setStatus(UserStatus.WARNING);
+                    commentAuthor.setScore(0);
                     
                     // Tự động gán thời hạn phạt 3 ngày
                     LocalDateTime now = LocalDateTime.now();
