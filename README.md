@@ -49,3 +49,4 @@ mvn spring-boot:run
   - Trích xuất và kiểm duyệt chữ trên ảnh/video (EasyOCR + VietOCR).
 - **Moderator Dashboard:** Quản lý hàng đợi kiểm duyệt (Ticket Queue), giao diện duyệt bài xử lý điểm nghi ngờ của AI, khoanh vùng vi phạm (Bounding Box).
 - **Hệ thống xử lý kháng nghị:** Cơ chế "hai chiều" cho phép người dùng gửi khiếu nại (Appeal) quyết định của AI, kèm giao diện Split View đối chiếu cho kiểm duyệt viên.
+- **Lưu ý:** Nếu bạn muốn xem chi tiết về kết quả đánh giá các mô hình AI, sơ đồ thiết kế hệ thống và cách triển khai toàn diện, vui lòng tham khảo file `BAOCAOKETQUA.pdf` đính kèm trên Git.
