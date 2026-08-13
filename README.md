@@ -14,7 +14,8 @@ Hệ thống AI xử lý đa phương thức với các mô hình chuyên biệt
 - `phobert_hatespeech_best.pt` (~515MB): Mô hình PhoBERT phân loại ngôn từ thù ghét và OCR tiếng Việt.
 - `best_NSFW.pt` (~99.5MB): Mô hình DeepCNN nhận diện hình ảnh nhạy cảm / khiêu dâm.
 - `best_violence.pth` (~16.5MB): Mô hình CNN-GRU nhận diện bạo lực trong chuỗi khung hình video.
-- `mfcc_hatespeech_model.pt` (~26.8MB): Mô hình BiLSTM nhận diện ngôn từ độc hại qua âm thanh.
+- `mfcc_hatespeech_model.pt` (~26.8MB): Mô hình BiLSTM nhận diện ngôn từ độc hại qua ngữ cảnh.
+- `vietocr_vgg_transformer.pth` (~144MB): Mô hình OCR nhận diện tiễng Việt trong ảnh.
 
 ## 4. Yêu cầu hệ thống
 - JDK 17
